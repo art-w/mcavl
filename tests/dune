@@ -1,0 +1,17 @@
+(executable
+ (name bench)
+ (modules bench)
+ (libraries mcset domainslib unix))
+
+(executable
+ (name qc)
+ (modules qc)
+ (libraries
+  mcset
+  qcheck
+  qcheck-ounit
+  qcheck-core
+  qcheck-core.runner
+  multicorecheck.stm)
+ (preprocess
+  (pps ppx_deriving.show)))
