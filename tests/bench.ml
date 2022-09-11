@@ -1,21 +1,22 @@
-let nb =
-  try int_of_string Sys.argv.(1) with
-  | _ -> 100_000
+let nb = try int_of_string Sys.argv.(1) with _ -> 100_000
 
-let max_domains =
-  try int_of_string Sys.argv.(2) with
-  | _ -> 8
+let max_domains = try int_of_string Sys.argv.(2) with _ -> 8
 
 module T = Domainslib.Task
 
 module type SET = sig
   type elt = int
+
   type t
 
   val make : unit -> t
+
   val copy : t -> t
+
   val add : elt -> t -> unit
+
   val remove : elt -> t -> unit
+
   val cardinal : t -> int
 end
 
@@ -25,6 +26,7 @@ module Naive = struct
   module S = Set.Make (Int)
 
   type elt = S.elt
+
   type t = S.t Atomic.t
 
   let make () = Atomic.make S.empty
@@ -48,6 +50,7 @@ end
 
 module Test (Config : sig
   val pool : T.pool
+
   val nb_threads : int
 
   module S : SET
@@ -84,7 +87,7 @@ struct
         ~init:(fun () -> S.make ())
         (fun t ->
           iter 1 nb (fun i -> S.add i t) ;
-          t)
+          t )
     in
     assert (S.cardinal t = nb) ;
     t
@@ -94,31 +97,31 @@ struct
       ~init:(fun () ->
         let t = S.make () in
         iter 1 nb (fun i -> S.add i t) ;
-        t)
+        t )
       (fun t ->
         iter 1 nb (fun i -> S.remove i t) ;
-        assert (S.cardinal t = 0))
+        assert (S.cardinal t = 0) )
 
   let () =
     bench
       ~init:(fun () -> S.copy t_full)
       (fun t ->
         iter 1 nb (fun i -> S.remove i t) ;
-        assert (S.cardinal t = 0)) ;
+        assert (S.cardinal t = 0) ) ;
     assert (S.cardinal t_full = nb)
 end
 
 let run domains (module Impl : SET) =
   let module Config = struct
     let pool = T.setup_pool ~num_domains:domains ()
+
     let nb_threads = domains + 1
 
     module S = Impl
-  end
-  in
+  end in
   T.run Config.pool (fun () ->
-    let module Run = Test (Config) in
-    ()) ;
+      let module Run = Test (Config) in
+      () ) ;
   T.teardown_pool Config.pool ;
   Printf.printf "\n%!" ;
   ()

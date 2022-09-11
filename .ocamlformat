@@ -1,5 +1,11 @@
-profile = janestreet
+version = 0.24.1
+profile = ocamlformat
 let-binding-spacing = compact
 sequence-style = separator
 doc-comments = after-when-possible
 exp-grouping = preserve
+break-cases = toplevel
+cases-exp-indent = 4
+cases-matching-exp-indent = normal
+if-then-else = keyword-first
+parens-tuple = multi-line-only
