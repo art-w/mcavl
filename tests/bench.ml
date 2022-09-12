@@ -9,7 +9,7 @@ module type SET = sig
 
   type t
 
-  val make : unit -> t
+  val empty : unit -> t
 
   val copy : t -> t
 
@@ -29,7 +29,7 @@ module Naive = struct
 
   type t = S.t Atomic.t
 
-  let make () = Atomic.make S.empty
+  let empty () = Atomic.make S.empty
 
   let copy t =
     let s = Atomic.get t in
@@ -84,7 +84,7 @@ struct
   let t_full =
     let t =
       bench
-        ~init:(fun () -> S.make ())
+        ~init:(fun () -> S.empty ())
         (fun t ->
           iter 1 nb (fun i -> S.add i t) ;
           t )
@@ -95,7 +95,7 @@ struct
   let () =
     bench
       ~init:(fun () ->
-        let t = S.make () in
+        let t = S.empty () in
         iter 1 nb (fun i -> S.add i t) ;
         t )
       (fun t ->

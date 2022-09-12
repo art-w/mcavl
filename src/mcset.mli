@@ -3,7 +3,9 @@ module Make (E : Set.OrderedType) : sig
 
   type t
 
-  val make : unit -> t
+  val empty : unit -> t
+
+  val singleton : elt -> t
 
   val add : elt -> t -> unit
 
@@ -20,6 +22,14 @@ module Make (E : Set.OrderedType) : sig
 
     type t
 
+    val empty : t
+
+    val singleton : elt -> t
+
+    val add : elt -> t -> t
+
+    val mem : elt -> t -> bool
+
     val cardinal : t -> int
 
     val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
@@ -32,6 +42,12 @@ module Make (E : Set.OrderedType) : sig
 
     val elements : t -> elt list
 
+    val to_list : t -> elt list
+
+    val of_list : elt list -> t
+
+    val of_seq : elt Seq.t -> t
+
     val to_seq : t -> elt Seq.t
 
     val to_rev_seq : t -> elt Seq.t
@@ -40,6 +56,10 @@ module Make (E : Set.OrderedType) : sig
   end
 
   val snapshot : t -> View.t
+
+  val to_view : t -> View.t
+
+  val of_view : View.t -> t
 
   val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
 
@@ -50,6 +70,12 @@ module Make (E : Set.OrderedType) : sig
   val exists : (elt -> bool) -> t -> bool
 
   val elements : t -> elt list
+
+  val to_list : t -> elt list
+
+  val of_list : elt list -> t
+
+  val of_seq : elt Seq.t -> t
 
   val to_seq : t -> elt Seq.t
 

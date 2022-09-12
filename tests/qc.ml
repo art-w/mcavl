@@ -22,7 +22,7 @@ module Conf = struct
 
   let init_state = S.empty
 
-  let init_sut () = T.make ()
+  let init_sut () = T.empty ()
 
   let cleanup _ = ()
 

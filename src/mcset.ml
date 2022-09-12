@@ -23,9 +23,102 @@ module Make (E : Set.OrderedType) = struct
 
   and attempt_state = Unknown | Success | Failure
 
+  module Pure = struct
+    let empty ~s = Atomic.make (Leaf s)
+
+    let singleton ~s elt =
+      let leaf = Leaf s in
+      Atomic.make (Node (s, 1, Atomic.make leaf, elt, Atomic.make leaf))
+
+    let rec height ~get t = s_height ~get (get t)
+
+    and s_height ~get = function
+      | Leaf _ -> 0
+      | Node (_, h, _, _, _) -> h
+      | Copy t -> height ~get t
+
+    let rec create ~s ~get left pivot right =
+      Atomic.make (s_create ~s ~get left pivot right)
+
+    and s_create ~s ~get left pivot right =
+      let hl, hr = height ~get left, height ~get right in
+      let h = if hl >= hr then hl + 1 else hr + 1 in
+      Node (s, h, left, pivot, right)
+
+    let balance ~s ~get left pivot right =
+      let hl = height ~get left in
+      let hr = height ~get right in
+      if hl > hr + 2
+      then begin
+        match get left with
+        | Node (_, _, left_left, left_pivot, left_right) ->
+            let s_left_right = get left_right in
+            if height ~get left_left >= s_height ~get s_left_right
+            then
+              create ~s ~get left_left left_pivot
+                (create ~s ~get left_right pivot right)
+            else begin
+              match s_left_right with
+              | Node (_, _, center_left, center_pivot, center_right) ->
+                  create ~s ~get
+                    (create ~s ~get left_left left_pivot center_left)
+                    center_pivot
+                    (create ~s ~get center_right pivot right)
+              | _ -> assert false
+            end
+        | _ -> assert false
+      end
+      else if hr > hl + 2
+      then begin
+        match get right with
+        | Node (_, _, right_left, right_pivot, right_right) ->
+            if height ~get right_right >= height ~get right_left
+            then
+              create ~s ~get
+                (create ~s ~get left pivot right_left)
+                right_pivot right_right
+            else begin
+              match get right_left with
+              | Node (_, _, center_left, center_pivot, center_right) ->
+                  create ~s ~get
+                    (create ~s ~get left pivot center_left)
+                    center_pivot
+                    (create ~s ~get center_right right_pivot right_right)
+              | _ -> assert false
+            end
+        | _ -> assert false
+      end
+      else
+        let height = if hl >= hr then hl + 1 else hr + 1 in
+        Atomic.make (Node (s, height, left, pivot, right))
+
+    let rec add ~s ~get x t =
+      match get t with
+      | Leaf _ -> singleton ~s x
+      | Node (_, _, left, pivot, right) -> begin
+          match E.compare x pivot with
+          | 0 -> t
+          | c when c < 0 ->
+              let left' = add ~s ~get x left in
+              if left' == left then t else balance ~s ~get left' pivot right
+          | _ ->
+              let right' = add ~s ~get x right in
+              if right' == right then t else balance ~s ~get left pivot right'
+        end
+      | _ -> assert false
+
+    let of_list ~s lst =
+      List.fold_left (fun t x -> add ~s ~get:Atomic.get x t) (empty ~s) lst
+
+    let of_seq ~s seq =
+      Seq.fold_left (fun t x -> add ~s ~get:Atomic.get x t) (empty ~s) seq
+  end
+
   type result = Ok | Overflow | Looking_for_life | Retry
 
-  let make () = Atomic.make (Atomic.make (Leaf Alive))
+  let empty () = Atomic.make (Pure.empty ~s:Alive)
+
+  let singleton elt = Atomic.make (Pure.singleton ~s:Alive elt)
 
   let rec height t = s_height (Atomic.get t)
 
@@ -559,22 +652,34 @@ module Make (E : Set.OrderedType) = struct
         let (_ : result) = fixup t in
         mem x t
 
-  let mem x t = mem x (Atomic.get t)
-
   let rec snapshot t =
     let root = Atomic.get t in
     if Atomic.compare_and_set t root (Atomic.make (Copy root))
     then root
     else snapshot t
 
-  let copy t =
-    let root = snapshot t in
-    Atomic.make (Atomic.make (Copy root))
+  let to_view = snapshot
+
+  let of_view r = Atomic.make (Atomic.make (Copy r))
+
+  let copy t = of_view (to_view t)
 
   module View = struct
     type elt = E.t
 
     type t = r
+
+    let empty = Pure.empty ~s:Read_only
+
+    let singleton elt = Pure.singleton ~s:Read_only elt
+
+    let of_list lst = Pure.of_list ~s:Read_only lst
+
+    let of_seq lst = Pure.of_seq ~s:Read_only lst
+
+    let add elt t = Pure.add ~s:Read_only ~get:ensure_read_only elt t
+
+    let mem = mem
 
     let rec cardinal acc t =
       match ensure_read_only t with
@@ -619,6 +724,8 @@ module Make (E : Set.OrderedType) = struct
 
     let elements t = List.rev (fold (fun x xs -> x :: xs) t [])
 
+    let to_list = elements
+
     let rec to_seq t k =
       match ensure_read_only t with
       | Leaf Read_only -> k
@@ -652,6 +759,8 @@ module Make (E : Set.OrderedType) = struct
     let to_rev_seq t = to_rev_seq t (fun () -> Seq.Nil)
   end
 
+  let mem x t = mem x (Atomic.get t)
+
   let cardinal t = View.cardinal (snapshot t)
 
   let fold f t acc = View.fold f (snapshot t) acc
@@ -663,6 +772,12 @@ module Make (E : Set.OrderedType) = struct
   let exists f t = View.exists f (snapshot t)
 
   let elements t = View.elements (snapshot t)
+
+  let to_list = elements
+
+  let of_list lst = Atomic.make (Pure.of_list ~s:Alive lst)
+
+  let of_seq seq = Atomic.make (Pure.of_seq ~s:Alive seq)
 
   let to_seq t = View.to_seq (snapshot t)
 
