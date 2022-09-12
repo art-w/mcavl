@@ -572,6 +572,8 @@ module Make (E : Set.OrderedType) = struct
     Atomic.make (Atomic.make (Copy root))
 
   module View = struct
+    type elt = E.t
+
     type t = r
 
     let rec cardinal acc t =
@@ -584,7 +586,87 @@ module Make (E : Set.OrderedType) = struct
       | _ -> assert false
 
     let cardinal t = cardinal 0 t
+
+    let rec fold f t acc =
+      match ensure_read_only t with
+      | Leaf Read_only -> acc
+      | Node (Read_only, _, left, pivot, right) ->
+          let acc = fold f left acc in
+          let acc = f pivot acc in
+          fold f right acc
+      | _ -> assert false
+
+    let rec iter f t =
+      match ensure_read_only t with
+      | Leaf Read_only -> ()
+      | Node (Read_only, _, left, pivot, right) ->
+          iter f left ; f pivot ; iter f right
+      | _ -> assert false
+
+    let rec for_all f t =
+      match ensure_read_only t with
+      | Leaf Read_only -> true
+      | Node (Read_only, _, left, pivot, right) ->
+          f pivot && for_all f left && for_all f right
+      | _ -> assert false
+
+    let rec exists f t =
+      match ensure_read_only t with
+      | Leaf Read_only -> false
+      | Node (Read_only, _, left, pivot, right) ->
+          f pivot || exists f left || exists f right
+      | _ -> assert false
+
+    let elements t = List.rev (fold (fun x xs -> x :: xs) t [])
+
+    let rec to_seq t k =
+      match ensure_read_only t with
+      | Leaf Read_only -> k
+      | Node (Read_only, _, left, pivot, right) ->
+          to_seq left (fun () -> Seq.Cons (pivot, to_seq right k))
+      | _ -> assert false
+
+    let rec to_seq_from elt t k =
+      match ensure_read_only t with
+      | Leaf Read_only -> k
+      | Node (Read_only, _, left, pivot, right) -> begin
+          match E.compare elt pivot with
+          | 0 -> fun () -> Seq.Cons (pivot, to_seq right k)
+          | c when c < 0 ->
+              to_seq_from elt left (fun () -> Seq.Cons (pivot, to_seq right k))
+          | _ -> to_seq_from elt right k
+        end
+      | _ -> assert false
+
+    let to_seq_from elt t = to_seq_from elt t (fun () -> Seq.Nil)
+
+    let to_seq t = to_seq t (fun () -> Seq.Nil)
+
+    let rec to_rev_seq t k =
+      match ensure_read_only t with
+      | Leaf Read_only -> k
+      | Node (Read_only, _, left, pivot, right) ->
+          to_rev_seq right (fun () -> Seq.Cons (pivot, to_rev_seq left k))
+      | _ -> assert false
+
+    let to_rev_seq t = to_rev_seq t (fun () -> Seq.Nil)
   end
 
   let cardinal t = View.cardinal (snapshot t)
+
+  let fold f t acc = View.fold f (snapshot t) acc
+
+  let iter f t = View.iter f (snapshot t)
+
+  let for_all f t = View.for_all f (snapshot t)
+
+  let exists f t = View.exists f (snapshot t)
+
+  let elements t = View.elements (snapshot t)
+
+  let to_seq t = View.to_seq (snapshot t)
+
+  let to_rev_seq t = View.to_rev_seq (snapshot t)
+
+  let to_seq_from elt t = View.to_seq_from elt (snapshot t)
 end
