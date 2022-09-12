@@ -571,14 +571,20 @@ module Make (E : Set.OrderedType) = struct
     let root = snapshot t in
     Atomic.make (Atomic.make (Copy root))
 
-  let rec cardinal acc t =
-    match ensure_read_only t with
-    | Leaf Read_only -> acc
-    | Node (Read_only, _, left, _, right) ->
-        let acc = acc + 1 in
-        let acc = cardinal acc left in
-        cardinal acc right
-    | _ -> assert false
+  module View = struct
+    type t = r
 
-  let cardinal t = cardinal 0 (snapshot t)
+    let rec cardinal acc t =
+      match ensure_read_only t with
+      | Leaf Read_only -> acc
+      | Node (Read_only, _, left, _, right) ->
+          let acc = acc + 1 in
+          let acc = cardinal acc left in
+          cardinal acc right
+      | _ -> assert false
+
+    let cardinal t = cardinal 0 t
+  end
+
+  let cardinal t = View.cardinal (snapshot t)
 end

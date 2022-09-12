@@ -14,4 +14,12 @@ module Make (E : Set.OrderedType) : sig
   val cardinal : t -> int
 
   val copy : t -> t
+
+  module View : sig
+    type t
+
+    val cardinal : t -> int
+  end
+
+  val snapshot : t -> View.t
 end
