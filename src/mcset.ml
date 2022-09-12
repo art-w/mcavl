@@ -37,59 +37,72 @@ module Make (E : Set.OrderedType) = struct
       | Node (_, h, _, _, _) -> h
       | Copy t -> height ~get t
 
-    let rec create ~s ~get left pivot right =
-      Atomic.make (s_create ~s ~get left pivot right)
-
-    and s_create ~s ~get left pivot right =
-      let hl, hr = height ~get left, height ~get right in
-      let h = if hl >= hr then hl + 1 else hr + 1 in
-      Node (s, h, left, pivot, right)
+    let create ~s ~h left pivot right =
+      Atomic.make (Node (s, h, left, pivot, right))
 
     let balance ~s ~get left pivot right =
-      let hl = height ~get left in
-      let hr = height ~get right in
+      let s_left = get left in
+      let s_right = get right in
+      let hl = s_height ~get s_left in
+      let hr = s_height ~get s_right in
       if hl > hr + 2
       then begin
-        match get left with
+        match s_left with
         | Node (_, _, left_left, left_pivot, left_right) ->
+            let hll = height ~get left_left in
             let s_left_right = get left_right in
-            if height ~get left_left >= s_height ~get s_left_right
+            let hlr = s_height ~get s_left_right in
+            if hll >= hlr
             then
-              create ~s ~get left_left left_pivot
-                (create ~s ~get left_right pivot right)
+              let h = 1 + max hlr hr in
+              create ~s
+                ~h:(1 + max hll h)
+                left_left left_pivot
+                (create ~s ~h left_right pivot right)
             else begin
               match s_left_right with
               | Node (_, _, center_left, center_pivot, center_right) ->
-                  create ~s ~get
-                    (create ~s ~get left_left left_pivot center_left)
+                  let hlc = 1 + max hll (height ~get center_left) in
+                  let hcr = 1 + max (height ~get center_right) hr in
+                  let h = 1 + max hlc hcr in
+                  create ~s ~h
+                    (create ~s ~h:hlc left_left left_pivot center_left)
                     center_pivot
-                    (create ~s ~get center_right pivot right)
+                    (create ~s ~h:hcr center_right pivot right)
               | _ -> assert false
             end
         | _ -> assert false
       end
       else if hr > hl + 2
       then begin
-        match get right with
+        match s_right with
         | Node (_, _, right_left, right_pivot, right_right) ->
-            if height ~get right_right >= height ~get right_left
+            let hrr = height ~get right_right in
+            let s_right_left = get right_left in
+            let hrl = s_height ~get s_right_left in
+            if hrr >= hrl
             then
-              create ~s ~get
-                (create ~s ~get left pivot right_left)
+              let h = 1 + max hl hrl in
+              create ~s
+                ~h:(1 + max h hrr)
+                (create ~s ~h left pivot right_left)
                 right_pivot right_right
             else begin
               match get right_left with
               | Node (_, _, center_left, center_pivot, center_right) ->
-                  create ~s ~get
-                    (create ~s ~get left pivot center_left)
+                  let hlc = 1 + max hl (height ~get center_left) in
+                  let hcr = 1 + max (height ~get center_right) hrr in
+                  let h = 1 + max hlc hcr in
+                  create ~s ~h
+                    (create ~s ~h:hlc left pivot center_left)
                     center_pivot
-                    (create ~s ~get center_right right_pivot right_right)
+                    (create ~s ~h:hcr center_right right_pivot right_right)
               | _ -> assert false
             end
         | _ -> assert false
       end
       else
-        let height = if hl >= hr then hl + 1 else hr + 1 in
+        let height = 1 + max hl hr in
         Atomic.make (Node (s, height, left, pivot, right))
 
     let rec add ~s ~get x t =
