@@ -7,7 +7,7 @@ module Make (E : Set.OrderedType) : sig
 
   val add : elt -> t -> unit
 
-  val remove : elt -> t -> unit
+  val remove : elt -> t -> bool
 
   val mem : elt -> t -> bool
 

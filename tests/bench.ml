@@ -15,7 +15,7 @@ module type SET = sig
 
   val add : elt -> t -> unit
 
-  val remove : elt -> t -> unit
+  val remove : elt -> t -> bool
 
   val cardinal : t -> int
 end
@@ -43,7 +43,7 @@ module Naive = struct
   let rec remove x t =
     let s = Atomic.get t in
     let s' = S.remove x s in
-    if Atomic.compare_and_set t s s' then () else remove x t
+    if Atomic.compare_and_set t s s' then S.mem x s else remove x t
 
   let cardinal t = S.cardinal (Atomic.get t)
 end
@@ -99,14 +99,14 @@ struct
         iter 1 nb (fun i -> S.add i t) ;
         t )
       (fun t ->
-        iter 1 nb (fun i -> S.remove i t) ;
+        iter 1 nb (fun i -> assert (S.remove i t)) ;
         assert (S.cardinal t = 0) )
 
   let () =
     bench
       ~init:(fun () -> S.copy t_full)
       (fun t ->
-        iter 1 nb (fun i -> S.remove i t) ;
+        iter 1 nb (fun i -> assert (S.remove i t)) ;
         assert (S.cardinal t = 0) ) ;
     assert (S.cardinal t_full = nb)
 end

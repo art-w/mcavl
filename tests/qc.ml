@@ -36,7 +36,7 @@ module Conf = struct
   let run c r =
     match c with
     | Add i -> Res (unit, T.add i r)
-    | Remove i -> Res (unit, T.remove i r)
+    | Remove i -> Res (bool, T.remove i r)
     | Mem i -> Res (bool, T.mem i r)
     | Cardinal -> Res (int, T.cardinal r)
 
@@ -44,7 +44,8 @@ module Conf = struct
 
   let postcond c s res =
     match c, res with
-    | _, Res ((Unit, _), _) -> true
+    | Add _, Res ((Unit, _), _) -> true
+    | Remove i, Res ((Bool, _), found) -> found = S.mem i s
     | Mem i, Res ((Bool, _), m) -> m = S.mem i s
     | Cardinal, Res ((Int, _), m) -> m = S.cardinal s
     | _ -> assert false

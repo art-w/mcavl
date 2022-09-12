@@ -491,15 +491,15 @@ module Make (E : Set.OrderedType) = struct
   let rec remove ~gen elt t =
     let s = Atomic.get t in
     match s with
-    | Leaf Alive -> Ok (* not found *)
-    | Leaf Read_only | Node (Read_only, _, _, _, _) -> Retry
-    | Leaf Dead | Node (Dead, _, _, _, _) -> Looking_for_life
+    | Leaf Alive -> Ok, false (* not found *)
+    | Leaf Read_only | Node (Read_only, _, _, _, _) -> Retry, false
+    | Leaf Dead | Node (Dead, _, _, _, _) -> Looking_for_life, false
     | Node (Alive, h, left, pivot, right) -> begin
         match E.compare elt pivot with
         | 0 ->
             let root, expected = gen in
             if Atomic.get root != expected
-            then Retry
+            then Retry, false
             else begin
               let attempt = Atomic.make Unknown in
               let state = Attempt_remove (attempt, root, expected) in
@@ -508,41 +508,41 @@ module Make (E : Set.OrderedType) = struct
               then begin
                 finalize_op t s_removing ;
                 match Atomic.get attempt with
-                | Success -> fixup t
-                | Failure -> Retry
+                | Success -> fixup t, true
+                | Failure -> Retry, false
                 | Unknown -> assert false
               end
               else remove ~gen elt t
             end
         | c when c < 0 -> begin
             match remove ~gen elt left with
-            | Ok -> Ok
-            | Retry -> Retry
-            | Overflow -> balance t
-            | Looking_for_life -> remove ~gen elt t
+            | Ok, found -> Ok, found
+            | Retry, found -> Retry, found
+            | Overflow, found -> balance t, found
+            | Looking_for_life, _ -> remove ~gen elt t
           end
         | _ -> begin
             match remove ~gen elt right with
-            | Ok -> Ok
-            | Retry -> Retry
-            | Overflow -> balance t
-            | Looking_for_life -> remove ~gen elt t
+            | Ok, found -> Ok, found
+            | Retry, found -> Retry, found
+            | Overflow, found -> balance t, found
+            | Looking_for_life, _ -> remove ~gen elt t
           end
       end
     | _ ->
         let res = fixup t in
         begin
           match remove ~gen elt t with
-          | Ok -> res
-          | other -> other
+          | Ok, found -> res, found
+          | other, found -> other, found
         end
 
   let rec remove_retry elt t =
     let root = Atomic.get t in
     match remove ~gen:(t, root) elt root with
-    | Ok | Overflow -> ()
-    | Retry -> remove_retry elt t
-    | Looking_for_life -> assert false
+    | Ok, found | Overflow, found -> found
+    | Retry, _ -> remove_retry elt t
+    | Looking_for_life, _ -> assert false
 
   let remove elt t = remove_retry elt t
 
