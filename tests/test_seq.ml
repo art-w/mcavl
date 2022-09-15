@@ -1,5 +1,4 @@
-module MS = Mcset.Make (Int)
-module S = MS.View
+module S = Mcset.Make (Int)
 
 let shuffle a =
   let n = Array.length a in
@@ -16,7 +15,7 @@ let shuffle_list lst =
   shuffle a ; Array.to_list a
 
 let test_empty () =
-  let t = S.empty in
+  let t = S.empty () in
   Alcotest.(check int) "cardinal" 0 (S.cardinal t)
 
 let test_singleton () =
@@ -34,7 +33,14 @@ let test_shuffle () =
   Alcotest.(check bool) "mem" true (List.for_all (fun i -> S.mem i t) lst) ;
   Alcotest.(check bool)
     "not mem" false
-    (List.exists (fun i -> S.mem i t) @@ List.map (fun i -> i + 1) lst)
+    (List.exists (fun i -> S.mem i t) @@ List.map (fun i -> i + 1) lst) ;
+  List.iter
+    (fun i ->
+      Alcotest.(check bool) "mem before" true (S.mem i t) ;
+      Alcotest.(check bool) "remove" true (S.remove i t) ;
+      Alcotest.(check bool) "mem after" false (S.mem i t) )
+    lst ;
+  Alcotest.(check int) "cardinal after" 0 (S.cardinal t)
 
 let test_iter () =
   let t = S.of_list @@ List.init 1000 (fun i -> i) in
@@ -75,7 +81,7 @@ let test_seq () =
 let test_exists () =
   Alcotest.(check bool)
     "not exists empty" false
-    (S.exists (fun _ -> assert false) S.empty) ;
+    (S.exists (fun _ -> assert false) (S.empty ())) ;
   let t = S.of_list @@ List.init 1000 (fun i -> i) in
   let lst = ref [] in
   Alcotest.(check bool)
@@ -102,7 +108,7 @@ let test_exists () =
 let test_for_all () =
   Alcotest.(check bool)
     "for_all empty" true
-    (S.for_all (fun _ -> assert false) S.empty) ;
+    (S.for_all (fun _ -> assert false) (S.empty ())) ;
   let t = S.of_list @@ List.init 1000 (fun i -> i) in
   let lst = ref [] in
   Alcotest.(check bool)
@@ -126,6 +132,24 @@ let test_for_all () =
        t ) ;
   Alcotest.(check int) "for_all shortcut" 1 (List.length !lst)
 
+let test_view () =
+  let t = S.of_list @@ List.init 1000 (fun i -> i) in
+  let v = S.snapshot t in
+  for i = 500 to 1999 do
+    S.add i t
+  done ;
+  Alcotest.(check int) "cardinal" 1000 (S.View.cardinal v) ;
+  Alcotest.(check int) "cardinal" 2000 (S.cardinal t) ;
+  let t = S.of_view v in
+  for i = -500 to 499 do
+    S.add i t
+  done ;
+  for i = -500 to 499 do
+    Alcotest.(check bool) "remove" true (S.remove i t)
+  done ;
+  Alcotest.(check int) "cardinal" 1000 (S.View.cardinal v) ;
+  Alcotest.(check int) "cardinal" 500 (S.cardinal t)
+
 let tests =
   let open Alcotest in
   [ test_case "empty" `Quick test_empty
@@ -135,4 +159,5 @@ let tests =
   ; test_case "seq" `Quick test_seq
   ; test_case "exists" `Quick test_exists
   ; test_case "for_all" `Quick test_for_all
-  ; test_case "shuffle" `Quick test_shuffle ]
+  ; test_case "shuffle" `Quick test_shuffle
+  ; test_case "view" `Quick test_view ]
