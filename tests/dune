@@ -1,4 +1,9 @@
 (executable
+ (name test_view)
+ (modules test_view)
+ (libraries mcset alcotest))
+
+(executable
  (name bench)
  (modules bench)
  (libraries mcset domainslib unix))

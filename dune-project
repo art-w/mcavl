@@ -18,4 +18,5 @@
  (depends
    (ocaml (>= 5.0.0))
    dune
+   (alcotest :with-test)
    (domainslib :with-test)))

@@ -9,6 +9,7 @@ bug-reports: "https://github.com/art-w/mcset/issues"
 depends: [
   "ocaml" {>= "5.0.0"}
   "dune" {>= "3.3"}
+  "alcotest" {with-test}
   "domainslib" {with-test}
   "odoc" {with-doc}
 ]
