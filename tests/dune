@@ -1,6 +1,6 @@
 (executable
  (name tests)
- (modules test_seq test_view tests)
+ (modules test_seq test_view test_mc tests)
  (libraries mcset alcotest))
 
 (executable
