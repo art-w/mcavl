@@ -1,0 +1,4 @@
+pin-depends: [
+  [ "multicorecheck.dev" "git+https://github.com/jmid/multicoretests.git#main" ]
+  [ "multicoretests.dev" "git+https://github.com/jmid/multicoretests.git#main" ]
+]

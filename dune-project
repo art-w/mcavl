@@ -8,7 +8,9 @@
 
 (authors "Arthur Wendling")
 
-(maintainers "Arthur Wendling")
+(maintainers "art.wendling@gmail.com")
+
+(documentation "https://art-w.github.io/mcset/mcset/Mcset")
 
 (license MIT)
 
@@ -19,4 +21,7 @@
    (ocaml (>= 5.0.0))
    dune
    (alcotest :with-test)
-   (domainslib :with-test)))
+   (domainslib :with-test)
+   (multicoretests :with-test)
+   (multicorecheck :with-test)
+   ))

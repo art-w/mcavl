@@ -1,4 +1,4 @@
-A lock-free Set for OCaml multicore:
+A lock-free Set for OCaml multicore: [**online documentation**](https://art-w.github.io/mcset/mcset/Mcset)
 
 - The queries and updates are linearizable, such that you can pretend that they happened in a specific order when debugging your algorithms (even though their execution was interleaved.) The `copy` operation provides an `O(1)` snapshot of the set to observe a coherent copy-on-write view of the elements in the linearized timeline:
 
@@ -17,6 +17,8 @@ A lock-free Set for OCaml multicore:
 - The `remove` function requires a bit more care to play nice with concurrent threads. The standard procedure would "teleport" a leaf value to replace the removed one... but this risks hiding the teleported element from concurrent traversals that would then believe it didn't exist in the set. So the remove operation first mark the element as removed, then performs safe rotations to push that node towards the leaves where it can finally be cleared.
 
 - The `copy`/`snapshot` functionality is in itself trivial, as it only signals that the original tree is now read-only and that further modifications have to perform copy-on-write on the visited nodes. However, a concurrent `add` or `remove` is now in a difficult situation as it is unclear if their effect happened before or after the copy... and choosing wrong breaks linearizability. The solution is to first signal their intent, then check that no other threads have indicated a causality violation before actually committing their effect. Time traveling is fine if no one can catch us!
+
+- [QuickCheck State-Machine Testing](https://github.com/jmid/multicoretests) was instrumental in discovering issues and validating the final design.
 
 - Given enough cores, performances are reasonable! In presence of contention, a concurrent operation will help other threads finish their work in order to avoid having to wait for them. There should be little busy looping to make progress: The worst case is a concurrent `copy` that requires the operation to restart from scratch on the new copy-on-write root. The expected cases are contention by inserting new elements at the exact same leaf (which only requires a local retry at that spot), or when encountering "dead" nodes (where it doesn't take long to walk back up the tree to discover the freshly rebalanced path.)
 
