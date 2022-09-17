@@ -80,6 +80,27 @@ module Make (Ord : Set.OrderedType) : sig
         elements of [t]. If [x] was already in the set [t], then the result
         is physically equal to [t]. *)
 
+    val remove : elt -> t -> t
+    (** [remove x t] returns a set containing the elements of [t] without [x].
+        If [x] was not a member of the set [t], then the result is physically
+        equal to [t]. *)
+
+    val pop_min : t -> elt * t
+    (** [pop_min t] returns the smallest element and the other elements
+        of the set [t], or raises [Not_found] if the set [t] is empty. *)
+
+    val pop_min_opt : t -> (elt * t) option
+    (** [pop_min_opt t] returns the smallest element and the other elements
+        of the set [t], or [None] if the set [t] is empty. *)
+
+    val pop_max : t -> elt * t
+    (** [pop_max t] returns the largest element and the other elements
+        of the set [t], or raises [Not_found] if the set [t] is empty. *)
+
+    val pop_max_opt : t -> (elt * t) option
+    (** [pop_max_opt t] returns the largest element and the other elements
+        of the set [t], or [None] if the set [t] is empty. *)
+
     (** @inline *)
     include S.QUERY with type elt := elt and type t := t
 

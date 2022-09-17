@@ -57,7 +57,36 @@ let test_shuffle () =
   Alcotest.(check bool) "mem" true (List.for_all (fun i -> S.mem i t) lst) ;
   Alcotest.(check bool)
     "not mem" false
-    (List.exists (fun i -> S.mem i t) @@ List.map (fun i -> i + 1) lst)
+    (List.exists (fun i -> S.mem i t) @@ List.map (fun i -> i + 1) lst) ;
+  let t' =
+    List.fold_left
+      (fun t i ->
+        let x, t' = S.pop_min t in
+        Alcotest.(check int) "pop_min" i x ;
+        let card = S.cardinal t - 1 in
+        Alcotest.(check int) "pop_min cardinal" card (S.cardinal t') ;
+        let t'' = S.remove i t in
+        Alcotest.(check bool) "remove not equal" false (t == t'') ;
+        Alcotest.(check int) "remove cardinal" card (S.cardinal t'') ;
+        t'' )
+      t lst
+  in
+  Alcotest.(check bool) "is_empty" true (S.is_empty t') ;
+  Alcotest.(check bool) "not mem 43" false (S.mem 43 t) ;
+  let t' = S.remove 43 t in
+  Alcotest.(check bool) "remove physeq" true (t' == t) ;
+  Alcotest.(check bool) "mem 78" true (S.mem 78 t) ;
+  let t' = S.add 78 t in
+  Alcotest.(check bool) "add physeq" true (t' == t) ;
+  let lst', t' =
+    List.fold_left
+      (fun (acc, t) _ ->
+        let x, t = S.pop_max t in
+        x :: acc, t )
+      ([], t) lst
+  in
+  Alcotest.(check bool) "pop_max empty" true (S.is_empty t') ;
+  Alcotest.(check (list int)) "pop_max sorted" lst lst'
 
 let test_iter () =
   let t = S.of_list @@ List.init 1000 (fun i -> i) in

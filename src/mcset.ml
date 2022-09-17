@@ -284,6 +284,86 @@ module Make (E : Set.OrderedType) = struct
 
     let add elt t = Pure.add ~s:Read_only ~get:ensure_read_only elt t
 
+    let balance left pivot right =
+      Pure.balance ~s:Read_only ~get:ensure_read_only left pivot right
+
+    let rec pop_min_opt t =
+      match ensure_read_only t with
+      | Leaf Read_only -> None
+      | Node (Read_only, _, left, pivot, right) -> begin
+          match pop_min_opt left with
+          | None -> Some (pivot, right)
+          | Some (min, left) -> Some (min, balance left pivot right)
+        end
+      | _ -> assert false
+
+    let pop_min t =
+      match pop_min_opt t with
+      | Some x -> x
+      | None -> raise Not_found
+
+    let rec pop_max_opt t =
+      match ensure_read_only t with
+      | Leaf Read_only -> None
+      | Node (Read_only, _, left, pivot, right) -> begin
+          match pop_max_opt right with
+          | None -> Some (pivot, left)
+          | Some (max, right) -> Some (max, balance left pivot right)
+        end
+      | _ -> assert false
+
+    let pop_max t =
+      match pop_max_opt t with
+      | Some x -> x
+      | None -> raise Not_found
+
+    let rec add_min elt t =
+      match ensure_read_only t with
+      | Leaf Read_only -> singleton elt
+      | Node (Read_only, _, left, pivot, right) ->
+          balance (add_min elt left) pivot right
+      | _ -> assert false
+
+    let rec add_max elt t =
+      match ensure_read_only t with
+      | Leaf Read_only -> singleton elt
+      | Node (Read_only, _, left, pivot, right) ->
+          balance left pivot (add_max elt right)
+      | _ -> assert false
+
+    let rec join left pivot right =
+      match ensure_read_only left, ensure_read_only right with
+      | Leaf Read_only, Leaf Read_only -> singleton pivot
+      | Leaf Read_only, _ -> add_min pivot right
+      | _, Leaf Read_only -> add_max pivot left
+      | Node (Read_only, lh, ll, lp, lr), Node (Read_only, rh, rl, rp, rr) ->
+          if lh > rh + 2
+          then balance ll lp (join lr pivot right)
+          else if rh > lh + 2
+          then balance (join left pivot rl) rp rr
+          else create left pivot right
+      | _ -> assert false
+
+    let append left right =
+      match pop_min_opt right with
+      | None -> left
+      | Some (pivot, right) -> join left pivot right
+
+    let rec remove elt t =
+      match ensure_read_only t with
+      | Leaf Read_only -> t
+      | Node (Read_only, _, left, pivot, right) -> begin
+          match E.compare elt pivot with
+          | 0 -> append left right
+          | c when c < 0 ->
+              let left' = remove elt left in
+              if left == left' then t else balance left' pivot right
+          | _ ->
+              let right' = remove elt right in
+              if right == right' then t else balance left pivot right'
+        end
+      | _ -> assert false
+
     let rec mem x t =
       match ensure_read_only t with
       | Leaf Read_only -> false
