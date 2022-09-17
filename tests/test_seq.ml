@@ -45,6 +45,7 @@ let test_shuffle () =
   let elt = S.max_elt t in
   Alcotest.(check bool) "max_elt mem" true (S.mem elt t) ;
   Alcotest.(check bool) "max_elt largest" true (S.for_all (fun e -> elt >= e) t) ;
+  Alcotest.(check int) "find" 42 (S.find 42 t) ;
   List.iter
     (fun i ->
       Alcotest.(check bool) "mem before" true (S.mem i t) ;

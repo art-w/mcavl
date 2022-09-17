@@ -36,6 +36,14 @@ module type QUERY = sig
   val choose_opt : t -> elt option
   (** [choose_opt t] returns an arbitrary element of the set [t],
       or [None] if the set is empty. {b O(1)} *)
+
+  val find : elt -> t -> elt
+  (** [find x t] returns the element of the set that compares equal to [x],
+      or raises [Not_found] if no such element exists. {b O(log N)} *)
+
+  val find_opt : elt -> t -> elt option
+  (** [find_opt x t] returns the element of the set that compares equal to [x],
+      or [None] if no such element exists. {b O(log N)} *)
 end
 
 module type ITER = sig

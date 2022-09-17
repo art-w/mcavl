@@ -157,6 +157,26 @@ module Make (E : Set.OrderedType) = struct
 
   let mem x t = mem x (Atomic.get t)
 
+  let rec find_opt x t =
+    match Atomic.get t with
+    | Leaf _ -> None
+    | Node ((Alive | Dead | Read_only), _, left, pivot, right) -> begin
+        match E.compare x pivot with
+        | 0 -> Some pivot
+        | c when c < 0 -> find_opt x left
+        | _ -> find_opt x right
+      end
+    | _ ->
+        let (_ : result) = fixup t in
+        find_opt x t
+
+  let find_opt x t = find_opt x (Atomic.get t)
+
+  let find x t =
+    match find_opt x t with
+    | Some x -> x
+    | None -> raise Not_found
+
   let rec min_elt_opt t =
     match Atomic.get t with
     | Leaf _ -> None
@@ -232,6 +252,22 @@ module Make (E : Set.OrderedType) = struct
           | _ -> mem x right
         end
       | _ -> assert false
+
+    let rec find_opt x t =
+      match ensure_read_only t with
+      | Leaf Read_only -> None
+      | Node (Read_only, _, left, pivot, right) -> begin
+          match E.compare x pivot with
+          | 0 -> Some pivot
+          | c when c < 0 -> find_opt x left
+          | _ -> find_opt x right
+        end
+      | _ -> assert false
+
+    let find x t =
+      match find_opt x t with
+      | Some x -> x
+      | None -> raise Not_found
 
     let is_empty t =
       match ensure_read_only t with
