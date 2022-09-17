@@ -39,11 +39,31 @@ module type QUERY = sig
 
   val find : elt -> t -> elt
   (** [find x t] returns the element of the set that compares equal to [x],
-      or raises [Not_found] if no such element exists. {b O(log N)} *)
+      or raises [Not_found] if no such element exists. {b O(logN)} *)
 
   val find_opt : elt -> t -> elt option
   (** [find_opt x t] returns the element of the set that compares equal to [x],
-      or [None] if no such element exists. {b O(log N)} *)
+      or [None] if no such element exists. {b O(logN)} *)
+
+  val find_first : (elt -> bool) -> t -> elt
+  (** [find_first predicate t] returns the smallest element of the set [t]
+      that satisfies that monotonically increasing [predicate],
+      or raises [Not_found] if no such element exists. {b O(logN)} *)
+
+  val find_first_opt : (elt -> bool) -> t -> elt option
+  (** [find_first_opt predicate t] returns the smallest element of the set [t]
+      that satisfies that monotonically increasing [predicate],
+      or [None] if no such element exists. {b O(logN)} *)
+
+  val find_last : (elt -> bool) -> t -> elt
+  (** [find_last predicate t] returns the largest element of the set [t]
+      that satisfies that monotonically decreasing [predicate],
+      or raises [Not_found] if no such element exists. {b O(logN)} *)
+
+  val find_last_opt : (elt -> bool) -> t -> elt option
+  (** [find_last_opt predicate t] returns the smallest element of the set [t]
+      that satisfies that monotonically increasing [predicate],
+      or [None] if no such element exists. {b O(logN)} *)
 end
 
 module type ITER = sig

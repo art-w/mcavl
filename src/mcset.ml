@@ -177,6 +177,48 @@ module Make (E : Set.OrderedType) = struct
     | Some x -> x
     | None -> raise Not_found
 
+  let rec find_first_opt f t =
+    match Atomic.get t with
+    | Leaf _ -> None
+    | Node ((Alive | Dead | Read_only), _, left, pivot, right) ->
+        if f pivot
+        then
+          match find_first_opt f left with
+          | None -> Some pivot
+          | some -> some
+        else find_first_opt f right
+    | _ ->
+        let (_ : result) = fixup t in
+        find_first_opt f t
+
+  let find_first_opt f t = find_first_opt f (Atomic.get t)
+
+  let find_first f t =
+    match find_first_opt f t with
+    | Some x -> x
+    | None -> raise Not_found
+
+  let rec find_last_opt f t =
+    match Atomic.get t with
+    | Leaf _ -> None
+    | Node ((Alive | Dead | Read_only), _, left, pivot, right) ->
+        if f pivot
+        then
+          match find_last_opt f right with
+          | None -> Some pivot
+          | some -> some
+        else find_last_opt f left
+    | _ ->
+        let (_ : result) = fixup t in
+        find_last_opt f t
+
+  let find_last_opt f t = find_last_opt f (Atomic.get t)
+
+  let find_last f t =
+    match find_last_opt f t with
+    | Some x -> x
+    | None -> raise Not_found
+
   let rec min_elt_opt t =
     match Atomic.get t with
     | Leaf _ -> None
@@ -266,6 +308,44 @@ module Make (E : Set.OrderedType) = struct
 
     let find x t =
       match find_opt x t with
+      | Some x -> x
+      | None -> raise Not_found
+
+    let rec find_first_opt f t =
+      match ensure_read_only t with
+      | Leaf Read_only -> None
+      | Node (Read_only, _, left, pivot, right) ->
+          if f pivot
+          then
+            match find_first_opt f left with
+            | None -> Some pivot
+            | some -> some
+          else find_first_opt f right
+      | _ ->
+          let (_ : result) = fixup t in
+          find_first_opt f t
+
+    let find_first f t =
+      match find_first_opt f t with
+      | Some x -> x
+      | None -> raise Not_found
+
+    let rec find_last_opt f t =
+      match ensure_read_only t with
+      | Leaf Read_only -> None
+      | Node (Read_only, _, left, pivot, right) ->
+          if f pivot
+          then
+            match find_last_opt f right with
+            | None -> Some pivot
+            | some -> some
+          else find_last_opt f left
+      | _ ->
+          let (_ : result) = fixup t in
+          find_last_opt f t
+
+    let find_last f t =
+      match find_last_opt f t with
       | Some x -> x
       | None -> raise Not_found
 

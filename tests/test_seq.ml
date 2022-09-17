@@ -46,6 +46,18 @@ let test_shuffle () =
   Alcotest.(check bool) "max_elt mem" true (S.mem elt t) ;
   Alcotest.(check bool) "max_elt largest" true (S.for_all (fun e -> elt >= e) t) ;
   Alcotest.(check int) "find" 42 (S.find 42 t) ;
+  Alcotest.(check int) "find_first" 68 (S.find_first (fun x -> x > 66) t) ;
+  Alcotest.(check int) "find_first bound" 0 (S.find_first (fun x -> x > -10) t) ;
+  Alcotest.(check (option int))
+    "find_first_opt missing" None
+    (S.find_first_opt (fun x -> x > 99999) t) ;
+  Alcotest.(check int) "find_last" 522 (S.find_last (fun x -> x < 523) t) ;
+  Alcotest.(check int)
+    "find_last bound" (S.max_elt t)
+    (S.find_last (fun x -> x < 9999) t) ;
+  Alcotest.(check (option int))
+    "find_last_opt missing" None
+    (S.find_last_opt (fun x -> x < 0) t) ;
   List.iter
     (fun i ->
       Alcotest.(check bool) "mem before" true (S.mem i t) ;
