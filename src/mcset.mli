@@ -28,10 +28,6 @@ module Make (Ord : Set.OrderedType) : sig
   (** [singleton x] returns a new set containing only the element [x].
       {b O(1)} *)
 
-  val mem : elt -> t -> bool
-  (** [mem x t] returns [true] if the element [x] belongs to the set [t],
-      [false] otherwise. {b O(logN)} *)
-
   val add : elt -> t -> unit
   (** [add x t] inserts the element [x] into the set [t]. If [x] was already
       a member, then the set is unchanged. {b O(logN)} *)
@@ -41,6 +37,9 @@ module Make (Ord : Set.OrderedType) : sig
       a boolean indicating if the removal was successful. If [false], the
       element [x] was already not a member and the set is unchanged.
       {b O(logN)} *)
+
+  (** @inline *)
+  include S.QUERY with type elt := elt and type t := t
 
   (** {2 Snapshots}
 
@@ -81,8 +80,8 @@ module Make (Ord : Set.OrderedType) : sig
         elements of [t]. If [x] was already in the set [t], then the result
         is physically equal to [t]. *)
 
-    val mem : elt -> t -> bool
-    (** [mem x t] tests if the element [x] is a member of the set [t]. *)
+    (** @inline *)
+    include S.QUERY with type elt := elt and type t := t
 
     (** @inline *)
     include S.ITER with type elt := elt and type t := t

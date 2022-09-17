@@ -117,6 +117,31 @@ module Make (E : Set.OrderedType) = struct
 
   let remove elt t = remove_retry elt t
 
+  let rec is_empty t =
+    match Atomic.get t with
+    | Leaf _ -> true
+    | Node ((Alive | Dead | Read_only), _, _, _, _) -> false
+    | _ ->
+        let (_ : result) = fixup t in
+        is_empty t
+
+  let is_empty t = is_empty (Atomic.get t)
+
+  let rec choose_opt t =
+    match Atomic.get t with
+    | Leaf _ -> None
+    | Node ((Alive | Dead | Read_only), _, _, pivot, _) -> Some pivot
+    | _ ->
+        let (_ : result) = fixup t in
+        choose_opt t
+
+  let choose_opt t = choose_opt (Atomic.get t)
+
+  let choose t =
+    match choose_opt t with
+    | Some x -> x
+    | None -> raise Not_found
+
   let rec mem x t =
     match Atomic.get t with
     | Leaf _ -> false
@@ -129,6 +154,46 @@ module Make (E : Set.OrderedType) = struct
     | _ ->
         let (_ : result) = fixup t in
         mem x t
+
+  let mem x t = mem x (Atomic.get t)
+
+  let rec min_elt_opt t =
+    match Atomic.get t with
+    | Leaf _ -> None
+    | Node ((Alive | Dead | Read_only), _, left, pivot, _) -> begin
+        match min_elt_opt left with
+        | None -> Some pivot
+        | some -> some
+      end
+    | _ ->
+        let (_ : result) = fixup t in
+        min_elt_opt t
+
+  let min_elt_opt t = min_elt_opt (Atomic.get t)
+
+  let min_elt t =
+    match min_elt_opt t with
+    | Some x -> x
+    | None -> raise Not_found
+
+  let rec max_elt_opt t =
+    match Atomic.get t with
+    | Leaf _ -> None
+    | Node ((Alive | Dead | Read_only), _, _, pivot, right) -> begin
+        match max_elt_opt right with
+        | None -> Some pivot
+        | some -> some
+      end
+    | _ ->
+        let (_ : result) = fixup t in
+        max_elt_opt t
+
+  let max_elt_opt t = max_elt_opt (Atomic.get t)
+
+  let max_elt t =
+    match max_elt_opt t with
+    | Some x -> x
+    | None -> raise Not_found
 
   let rec snapshot t =
     let root = Atomic.get t in
@@ -157,7 +222,63 @@ module Make (E : Set.OrderedType) = struct
 
     let add elt t = Pure.add ~s:Read_only ~get:ensure_read_only elt t
 
-    let mem = mem
+    let rec mem x t =
+      match ensure_read_only t with
+      | Leaf Read_only -> false
+      | Node (Read_only, _, left, pivot, right) -> begin
+          match E.compare x pivot with
+          | 0 -> true
+          | c when c < 0 -> mem x left
+          | _ -> mem x right
+        end
+      | _ -> assert false
+
+    let is_empty t =
+      match ensure_read_only t with
+      | Leaf Read_only -> true
+      | Node (Read_only, _, _, _, _) -> false
+      | _ -> assert false
+
+    let choose_opt t =
+      match ensure_read_only t with
+      | Leaf Read_only -> None
+      | Node (Read_only, _, _, pivot, _) -> Some pivot
+      | _ -> assert false
+
+    let choose t =
+      match choose_opt t with
+      | Some x -> x
+      | None -> raise Not_found
+
+    let rec min_elt_opt t =
+      match ensure_read_only t with
+      | Leaf Read_only -> None
+      | Node (Read_only, _, left, pivot, _) -> begin
+          match min_elt_opt left with
+          | None -> Some pivot
+          | some -> some
+        end
+      | _ -> assert false
+
+    let min_elt t =
+      match min_elt_opt t with
+      | Some x -> x
+      | None -> raise Not_found
+
+    let rec max_elt_opt t =
+      match ensure_read_only t with
+      | Leaf Read_only -> None
+      | Node (Read_only, _, _, pivot, right) -> begin
+          match max_elt_opt right with
+          | None -> Some pivot
+          | some -> some
+        end
+      | _ -> assert false
+
+    let max_elt t =
+      match max_elt_opt t with
+      | Some x -> x
+      | None -> raise Not_found
 
     let rec cardinal acc t =
       match ensure_read_only t with
@@ -236,8 +357,6 @@ module Make (E : Set.OrderedType) = struct
 
     let to_rev_seq t = to_rev_seq t (fun () -> Seq.Nil)
   end
-
-  let mem x t = mem x (Atomic.get t)
 
   let cardinal t = View.cardinal (snapshot t)
 

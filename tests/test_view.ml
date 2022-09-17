@@ -29,8 +29,19 @@ let test_shuffle () =
   let lst = List.init 1000 (fun i -> 2 * i) in
   let t = S.of_list @@ shuffle_list lst in
   Alcotest.(check int) "cardinal" 1000 (S.cardinal t) ;
+  Alcotest.(check bool) "is_empty" false (S.is_empty t) ;
   let lst' = S.to_list t in
   Alcotest.(check (list int)) "iso" lst lst' ;
+  let elt = S.choose t in
+  Alcotest.(check bool) "choose mem" true (S.mem elt t) ;
+  let elt = S.min_elt t in
+  Alcotest.(check bool) "min_elt mem" true (S.mem elt t) ;
+  Alcotest.(check bool)
+    "min_elt smallest" true
+    (S.for_all (fun e -> elt <= e) t) ;
+  let elt = S.max_elt t in
+  Alcotest.(check bool) "max_elt mem" true (S.mem elt t) ;
+  Alcotest.(check bool) "max_elt largest" true (S.for_all (fun e -> elt >= e) t) ;
   Alcotest.(check bool) "mem" true (List.for_all (fun i -> S.mem i t) lst) ;
   Alcotest.(check bool)
     "not mem" false
@@ -73,6 +84,7 @@ let test_seq () =
     (List.rev lst)
 
 let test_exists () =
+  Alcotest.(check bool) "is_empty" true (S.is_empty S.empty) ;
   Alcotest.(check bool)
     "not exists empty" false
     (S.exists (fun _ -> assert false) S.empty) ;

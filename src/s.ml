@@ -1,3 +1,43 @@
+module type QUERY = sig
+  type elt
+
+  type t
+
+  (** {2 Queries} *)
+
+  val is_empty : t -> bool
+  (** [is_empty t] returns [true] when the set [t] contains no elements,
+      [false] if it has at least one member. {b O(1)}  *)
+
+  val mem : elt -> t -> bool
+  (** [mem x t] returns [true] if the element [x] belongs to the set [t],
+      [false] otherwise. {b O(logN)} *)
+
+  val min_elt : t -> elt
+  (** [min_elt t] returns the smallest element of the set [t],
+      or raises [Not_found] if the set is empty. {b O(logN)} *)
+
+  val min_elt_opt : t -> elt option
+  (** [min_elt_opt t] returns the smallest element of the set [t],
+      or [None] if the set is empty. {b O(logN)} *)
+
+  val max_elt : t -> elt
+  (** [max_elt t] returns the largest element of the set [t],
+      or raises [Not_found] if the set is empty. {b O(logN)} *)
+
+  val max_elt_opt : t -> elt option
+  (** [max_elt_opt t] returns the largest element of the set [t],
+      or [None] if the set is empty. {b O(logN)} *)
+
+  val choose : t -> elt
+  (** [choose t] returns an arbitrary element of the set [t],
+      or raises [Not_found] if the set is empty. {b O(1)} *)
+
+  val choose_opt : t -> elt option
+  (** [choose_opt t] returns an arbitrary element of the set [t],
+      or [None] if the set is empty. {b O(1)} *)
+end
+
 module type ITER = sig
   type elt
 
