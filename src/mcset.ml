@@ -364,6 +364,58 @@ module Make (E : Set.OrderedType) = struct
         end
       | _ -> assert false
 
+    let rec split elt t =
+      match ensure_read_only t with
+      | Leaf Read_only -> empty, false, empty
+      | Node (Read_only, _, left, pivot, right) -> begin
+          match E.compare elt pivot with
+          | 0 -> left, true, right
+          | c when c < 0 ->
+              let l, found, r = split elt left in
+              l, found, join r pivot right
+          | _ ->
+              let l, found, r = split elt right in
+              join left pivot l, found, r
+        end
+      | _ -> assert false
+
+    let rec union t1 t2 =
+      match ensure_read_only t1, ensure_read_only t2 with
+      | Leaf Read_only, _ -> t2
+      | _, Leaf Read_only -> t1
+      | Node (Read_only, h1, l1, p1, r1), Node (Read_only, h2, _, _, _)
+        when h1 >= h2 ->
+          let l2, _, r2 = split p1 t2 in
+          join (union l1 l2) p1 (union r1 r2)
+      | Node (Read_only, _, _, _, _), Node (Read_only, _, l2, p2, r2) ->
+          let l1, _, r1 = split p2 t1 in
+          join (union l1 l2) p2 (union r1 r2)
+      | _ -> assert false
+
+    let rec inter t1 t2 =
+      match ensure_read_only t1, ensure_read_only t2 with
+      | Leaf Read_only, _ | _, Leaf Read_only -> empty
+      | Node (Read_only, h1, l1, p1, r1), Node (Read_only, h2, _, _, _)
+        when h1 >= h2 ->
+          let l2, found, r2 = split p1 t2 in
+          let l12, r12 = inter l1 l2, inter r1 r2 in
+          if found then join l12 p1 r12 else append l12 r12
+      | Node (Read_only, _, _, _, _), Node (Read_only, _, l2, p2, r2) ->
+          let l1, found, r1 = split p2 t1 in
+          let l12, r12 = inter l1 l2, inter r1 r2 in
+          if found then join l12 p2 r12 else append l12 r12
+      | _ -> assert false
+
+    let rec diff t1 t2 =
+      match ensure_read_only t1, ensure_read_only t2 with
+      | Leaf Read_only, _ -> empty
+      | _, Leaf Read_only -> t1
+      | Node (Read_only, _, l1, p1, r1), _ ->
+          let l2, found, r2 = split p1 t2 in
+          let l12, r12 = diff l1 l2, diff r1 r2 in
+          if found then append l12 r12 else join l12 p1 r12
+      | _ -> assert false
+
     let rec mem x t =
       match ensure_read_only t with
       | Leaf Read_only -> false

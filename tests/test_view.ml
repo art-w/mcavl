@@ -88,6 +88,70 @@ let test_shuffle () =
   Alcotest.(check bool) "pop_max empty" true (S.is_empty t') ;
   Alcotest.(check (list int)) "pop_max sorted" lst lst'
 
+let test_union () =
+  let t1 = S.of_list @@ List.init 1000 (fun i -> 3 * i) in
+  let t2 = S.of_list @@ List.init 1000 (fun i -> (3 * i) + 1) in
+  let t3 = S.of_list @@ List.init 1000 (fun i -> 100 + i) in
+  let t12 = S.union t1 t2 in
+  Alcotest.(check bool)
+    "union t1 t2: subset t1" true
+    (S.for_all (fun e -> S.mem e t12) t1) ;
+  Alcotest.(check bool)
+    "union t1 t2: subset t2" true
+    (S.for_all (fun e -> S.mem e t12) t2) ;
+  let t123 = S.union t12 t3 in
+  Alcotest.(check bool)
+    "union t12 t3: subset t12" true
+    (S.for_all (fun e -> S.mem e t123) t12) ;
+  Alcotest.(check bool)
+    "union t12 t3: subset t3" true
+    (S.for_all (fun e -> S.mem e t123) t3)
+
+let test_inter () =
+  let t1 = S.of_list @@ List.init 1000 (fun i -> 3 * i) in
+  let t2 = S.of_list @@ List.init 1000 (fun i -> (3 * i) + 1) in
+  let t3 = S.of_list @@ List.init 1000 (fun i -> 100 + i) in
+  let t12 = S.inter t1 t2 in
+  Alcotest.(check bool) "inter empty" true (S.is_empty t12) ;
+  let t13 = S.inter t1 t3 in
+  Alcotest.(check bool)
+    "inter t1 t3: t1" true
+    (S.for_all (fun e -> S.mem e t13 = S.mem e t3) t1) ;
+  Alcotest.(check bool)
+    "inter t1 t3: t3" true
+    (S.for_all (fun e -> S.mem e t13 = S.mem e t1) t3)
+
+let test_diff () =
+  let t1 = S.of_list @@ List.init 1000 (fun i -> 3 * i) in
+  let t3 = S.of_list @@ List.init 1000 (fun i -> 100 + i) in
+  let t13 = S.diff t1 t3 in
+  Alcotest.(check bool)
+    "diff t1 t3: t1" true
+    (S.for_all (fun e -> S.mem e t13 = not (S.mem e t3)) t1) ;
+  Alcotest.(check bool)
+    "diff t1 t3: t3" true
+    (S.for_all (fun e -> not (S.mem e t13)) t3)
+
+let test_split () =
+  let t = S.of_list @@ List.init 1000 (fun i -> 2 * i) in
+  let smaller, found, larger = S.split 789 t in
+  Alcotest.(check bool) "split: not found" false found ;
+  Alcotest.(check int) "split: cardinal smaller" 395 (S.cardinal smaller) ;
+  Alcotest.(check bool)
+    "split: is smaller" true
+    (S.for_all (fun e -> e < 789) smaller) ;
+  Alcotest.(check int) "split: cardinal larger" 605 (S.cardinal larger) ;
+  Alcotest.(check bool)
+    "split: is larger" true
+    (S.for_all (fun e -> e > 789) larger) ;
+  Alcotest.(check bool)
+    "split: found" true
+    (S.for_all (fun e -> S.mem e (if e < 789 then smaller else larger)) t) ;
+  let smaller, found, larger = S.split 100 t in
+  Alcotest.(check bool) "split: found" true found ;
+  Alcotest.(check bool) "split: not smaller" false (S.mem 100 smaller) ;
+  Alcotest.(check bool) "split: not larger" false (S.mem 100 larger)
+
 let test_iter () =
   let t = S.of_list @@ List.init 1000 (fun i -> i) in
   let lst = ref [] in
@@ -183,6 +247,10 @@ let tests =
   let open Alcotest in
   [ test_case "empty" `Quick test_empty
   ; test_case "singleton" `Quick test_singleton
+  ; test_case "union" `Quick test_union
+  ; test_case "inter" `Quick test_inter
+  ; test_case "diff" `Quick test_diff
+  ; test_case "split" `Quick test_split
   ; test_case "iter" `Quick test_iter
   ; test_case "fold" `Quick test_fold
   ; test_case "seq" `Quick test_seq

@@ -60,8 +60,8 @@ module Make (Ord : Set.OrderedType) : sig
       {b O(1)} *)
 
   module View : sig
-    (** A read-only, non-mutable view of a set (similar to the purely
-        functional {! Stdlib.Set}.)  *)
+    (** A read-only, non-mutable view of a set (with more operations,
+        similar to the purely functional {! Stdlib.Set} interface) *)
 
     type elt = Ord.t
     (** The type of set elements. *)
@@ -73,29 +73,51 @@ module Make (Ord : Set.OrderedType) : sig
     (** The empty set. *)
 
     val singleton : elt -> t
-    (** [singleton x] returns a set containing only the element [x]. *)
+    (** [singleton x] returns a set containing only the element [x]. {b O(1)} *)
 
     val add : elt -> t -> t
     (** [add x t] returns a set containing the element [x] and all the
         elements of [t]. If [x] was already in the set [t], then the result
-        is physically equal to [t]. *)
+        is physically equal to [t]. {b O(logN)} *)
 
     val remove : elt -> t -> t
     (** [remove x t] returns a set containing the elements of [t] without [x].
         If [x] was not a member of the set [t], then the result is physically
-        equal to [t]. *)
+        equal to [t]. {b O(logN)} *)
+
+    val union : t -> t -> t
+    (** [union t1 t2] returns a set containing all the elements
+        of [t1] and [t2]. {b O(N)} worst-case *)
+
+    val inter : t -> t -> t
+    (** [inter t1 t2] returns a set containing the shared elements
+        of [t1] and [t2]. {b O(N)} worst-case *)
+
+    val diff : t -> t -> t
+    (** [diff t1 t2] returns a set containing the elements of [t1] that are
+        not members of the set [t2]. {b O(N)} worst-case *)
+
+    val split : elt -> t -> t * bool * t
+    (** [split x t] returns a triple [(smaller, found, larger)] such that:
+        - [smaller] is the subset of elements strictly smaller than [x]
+        - [larger] is the subset of elements strictly larger than [x]
+        - [found] is [true] if [x] is a member of the set [t], [false] otherwise.
+        {b O(logN)}
+    *)
 
     val pop_min : t -> elt * t
     (** [pop_min t] returns the smallest element and the other elements
-        of the set [t], or raises [Not_found] if the set [t] is empty. *)
+        of the set [t], or raises [Not_found] if the set [t] is empty.
+        {b O(logN)} *)
 
     val pop_min_opt : t -> (elt * t) option
     (** [pop_min_opt t] returns the smallest element and the other elements
-        of the set [t], or [None] if the set [t] is empty. *)
+        of the set [t], or [None] if the set [t] is empty. {b O(logN)} *)
 
     val pop_max : t -> elt * t
     (** [pop_max t] returns the largest element and the other elements
-        of the set [t], or raises [Not_found] if the set [t] is empty. *)
+        of the set [t], or raises [Not_found] if the set [t] is empty.
+        {b O(logN)} *)
 
     val pop_max_opt : t -> (elt * t) option
     (** [pop_max_opt t] returns the largest element and the other elements
@@ -103,6 +125,8 @@ module Make (Ord : Set.OrderedType) : sig
 
     (** @inline *)
     include S.QUERY with type elt := elt and type t := t
+
+    (** {2 Iterators} *)
 
     (** @inline *)
     include S.ITER with type elt := elt and type t := t
@@ -119,9 +143,9 @@ module Make (Ord : Set.OrderedType) : sig
   (** [of_view v] returns a new mutable set containing all the elements
       of the view [v]. {b O(1)} *)
 
-  (** {2 Iterators} *)
+  (** {2 Iterators}
 
-  (** The following functions all proceed on a coherent {! snapshot} of their
+      The following functions all proceed on a coherent {! snapshot} of their
       set [t] argument, created at the start of their execution. Concurrent
       modifications of the original set [t] during their execution will not
       be observed by these traversals.
