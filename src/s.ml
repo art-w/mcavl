@@ -268,8 +268,8 @@ end
 
 module Set_poly (Ord : Ordered_poly) = struct
   module type S = sig
-    (** Functor building an implementation of the mutable set structure
-        given a totally ordered polymorphic type. *)
+    (** Thread-safe mutable set structure given
+        a totally ordered polymorphic type. *)
 
     type 'a elt = 'a Ord.t
     (** The type of set elements. *)
@@ -352,8 +352,7 @@ module Set (Ord : Ordered) = struct
   module type View_not_poly = sig end
 
   module type S = sig
-    (** Functor building an implementation of the mutable set structure
-        given a totally ordered type. *)
+    (** Thread-safe mutable set structure given a totally ordered type. *)
 
     type elt = Ord.t
     (** The type of set elements. *)
@@ -386,25 +385,47 @@ end
 
 module Map_poly (Ord : Ordered_poly) = struct
   module type S = sig
+    (** Thread-safe mutable map structure given
+        a totally ordered polymorphic type. *)
+
     type 'a key = 'a Ord.t
+    (** The type of the map keys. *)
 
     type 'a t
+    (** The type of maps from type ['a key] to values of type ['a]. *)
 
     val empty : unit -> 'a t
+    (** [empty ()] returns a new empty map. {b O(1)} *)
 
     val singleton : 'a key -> 'a -> 'a t
+    (** [singleton k v] returns a new map containing only
+        the binding [k] for [v]. {b O(1)} *)
 
     val add : 'a key -> 'a -> 'a t -> unit
+    (** [add k v t] adds the binding [k] for [v] into the map [t].
+        If the key [k] was already bound, the previously bound value
+        is replaced by [v]. {b O(logN)} *)
 
     val remove : 'a key -> 'a t -> bool
+    (** [remove k t] deletes any binding of the key [k] in the map [t].
+        Returns [true] if the binding was removed, or [false] if no binding
+        existed for this key. {b O(logN)} *)
 
     val find : 'a key -> 'a t -> 'a
+    (** [find k t] returns the value associated with the key [k] in the map [t],
+        or raises [Not_found] if no such binding existed. {b O(logN)} *)
 
     val find_opt : 'a key -> 'a t -> 'a option
+    (** [find_opt k t] returns the value associated with the key [k]
+    in the map [t], or returns [None] if no such binding existed. {b O(logN)} *)
 
     val copy : 'a t -> 'a t
+    (** [copy t] returns an independently mutable copy of the map [t]. Further
+        modifications of the map [t] will not affect its copies
+        (and vice-versa.) {b O(1)} *)
 
     val cardinal : 'a t -> int
+    (** [cardinal t] returns the number of bindings in the map [t]. {b O(N)} *)
   end
 end
 
@@ -418,8 +439,14 @@ module Map (Ord : Ordered) = struct
   module type Sig = Map_poly(Ord_poly).S
 
   module type S = sig
-    type key = Ord.t
+    (** Thread-safe mutable map structure given a totally ordered type. *)
 
-    include Sig with type _ key := key
+    type key = Ord.t
+    (** The type of the map keys. *)
+
+    type 'a t
+    (** The type of maps from type [key] to values of type ['a]. *)
+
+    include Sig with type _ key := key and type 'a t := 'a t
   end
 end

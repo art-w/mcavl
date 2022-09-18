@@ -11,15 +11,13 @@
     observe its collection of elements at a given point in time.
 *)
 
-(** {1 Sets} *)
-
 module type Ordered = S.Ordered
 
 module Set (Ord : Ordered) : S.Set(Ord).S
 
 module Map (Ord : Ordered) : S.Map(Ord).S
 
-(** {1 Polymorphic sets} *)
+(** {1 Generalized interface for heterogeneous collections} *)
 
 module type Ordered_poly = S.Ordered_poly
 
