@@ -1,5 +1,5 @@
 module S = Set.Make (Int)
-module T = Mcset.Make (Int)
+module T = Mcavl.Make (Int)
 open QCheck
 open STM
 

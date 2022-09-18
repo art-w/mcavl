@@ -20,7 +20,7 @@ module type SET = sig
   val cardinal : t -> int
 end
 
-module Mcset_int = Mcset.Make (Int)
+module Mcset_int = Mcavl.Make (Int)
 
 module Naive = struct
   module S = Set.Make (Int)

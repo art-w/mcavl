@@ -1,18 +1,18 @@
 (executable
  (name tests)
  (modules test_seq test_view test_mc tests)
- (libraries mcset alcotest))
+ (libraries mcavl alcotest))
 
 (executable
  (name bench)
  (modules bench)
- (libraries mcset domainslib unix))
+ (libraries mcavl domainslib unix))
 
 (executable
  (name qc)
  (modules qc)
  (libraries
-  mcset
+  mcavl
   qcheck
   qcheck-ounit
   qcheck-core
