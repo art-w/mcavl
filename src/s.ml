@@ -383,3 +383,43 @@ module Set (Ord : Ordered) = struct
          and module View := View
   end
 end
+
+module Map_poly (Ord : Ordered_poly) = struct
+  module type S = sig
+    type 'a key = 'a Ord.t
+
+    type 'a t
+
+    val empty : unit -> 'a t
+
+    val singleton : 'a key -> 'a -> 'a t
+
+    val add : 'a key -> 'a -> 'a t -> unit
+
+    val remove : 'a key -> 'a t -> bool
+
+    val find : 'a key -> 'a t -> 'a
+
+    val find_opt : 'a key -> 'a t -> 'a option
+
+    val copy : 'a t -> 'a t
+
+    val cardinal : 'a t -> int
+  end
+end
+
+module Map (Ord : Ordered) = struct
+  module Ord_poly = struct
+    type _ t = Ord.t
+
+    let compare = Ord.compare
+  end
+
+  module type Sig = Map_poly(Ord_poly).S
+
+  module type S = sig
+    type key = Ord.t
+
+    include Sig with type _ key := key
+  end
+end

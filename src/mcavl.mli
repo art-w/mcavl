@@ -17,8 +17,12 @@ module type Ordered = S.Ordered
 
 module Set (Ord : Ordered) : S.Set(Ord).S
 
+module Map (Ord : Ordered) : S.Map(Ord).S
+
 (** {1 Polymorphic sets} *)
 
 module type Ordered_poly = S.Ordered_poly
 
 module Set_poly (Ord : Ordered_poly) : S.Set_poly(Ord).S
+
+module Map_poly (Ord : Ordered_poly) : S.Map_poly(Ord).S

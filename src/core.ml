@@ -33,7 +33,8 @@ module Make (E : S.Ordered_poly) = struct
           | Ok -> res
           | other -> other
         end
-    | Node ((Attempt_add _ | Attempt_remove _), _, _, _, _) ->
+    | Node ((Attempt_add _ | Attempt_remove _ | Attempt_replace _), _, _, _, _)
+      ->
         finalize_op t s ; fixup t
     | Copy t' ->
         let repr = make_copy t' in
@@ -72,6 +73,28 @@ module Make (E : S.Ordered_poly) = struct
             finalize_op t s
         | Success ->
             let repr = Node (Removing, height, left, pivot, right) in
+            let (_ : bool) = Atomic.compare_and_set t s repr in
+            ()
+        | Failure ->
+            let repr = Node (Alive, height, left, pivot, right) in
+            let (_ : bool) = Atomic.compare_and_set t s repr in
+            ()
+      end
+    | Node
+        ( Attempt_replace (attempt, root, expected, new_pivot)
+        , height
+        , left
+        , pivot
+        , right ) -> begin
+        match Atomic.get attempt with
+        | Unknown ->
+            let result =
+              if Atomic.get root == expected then Success else Failure
+            in
+            let (_ : bool) = Atomic.compare_and_set attempt Unknown result in
+            finalize_op t s
+        | Success ->
+            let repr = Node (Alive, height, left, new_pivot, right) in
             let (_ : bool) = Atomic.compare_and_set t s repr in
             ()
         | Failure ->

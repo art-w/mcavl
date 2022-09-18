@@ -21,6 +21,7 @@ module Make (E : S.Ordered_poly) = struct
     | Balancing_right_center of 'a s * 'a s * 'a s * 'a s
     | Attempt_add of attempt * 'a t * 'a r
     | Attempt_remove of attempt * 'a t * 'a r
+    | Attempt_replace of attempt * 'a t * 'a r * 'a elt
 
   and attempt = attempt_state Atomic.t
 

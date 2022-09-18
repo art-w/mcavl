@@ -9,8 +9,21 @@
  (libraries mcavl domainslib unix))
 
 (executable
- (name qc)
- (modules qc)
+ (name qc_set)
+ (modules qc_set)
+ (libraries
+  mcavl
+  qcheck
+  qcheck-ounit
+  qcheck-core
+  qcheck-core.runner
+  multicorecheck.stm)
+ (preprocess
+  (pps ppx_deriving.show)))
+
+(executable
+ (name qc_map)
+ (modules qc_map)
  (libraries
   mcavl
   qcheck

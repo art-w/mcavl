@@ -59,6 +59,82 @@ module Make_poly (E : S.Ordered_poly) = struct
 
   let add x t = add_retry x t
 
+  let rec add_or_replace ~gen x t =
+    let s = Atomic.get t in
+    match s with
+    | Leaf Dead | Node (Dead, _, _, _, _) -> Looking_for_life
+    | Leaf Read_only | Node (Read_only, _, _, _, _) -> Retry
+    | Leaf Alive ->
+        let root, expected = gen in
+        if Atomic.get root != expected
+        then Retry
+        else begin
+          let attempt = Atomic.make Unknown in
+          let state = Attempt_add (attempt, root, expected) in
+          let repr = Node (state, 1, Atomic.make s, x, Atomic.make s) in
+          if Atomic.compare_and_set t s repr
+          then begin
+            finalize_op t repr ;
+            match Atomic.get attempt with
+            | Success -> Overflow
+            | Failure -> Retry
+            | Unknown -> assert false
+          end
+          else add_or_replace ~gen x t
+        end
+    | Node (Alive, height, left, pivot, right) -> begin
+        match E.compare x pivot with
+        | 0 when pivot == x -> Ok
+        | 0 ->
+            let root, expected = gen in
+            if Atomic.get root != expected
+            then Retry
+            else begin
+              let attempt = Atomic.make Unknown in
+              let state = Attempt_replace (attempt, root, expected, x) in
+              let repr = Node (state, height, left, x, right) in
+              if Atomic.compare_and_set t s repr
+              then begin
+                finalize_op t repr ;
+                match Atomic.get attempt with
+                | Success -> Ok
+                | Failure -> Retry
+                | Unknown -> assert false
+              end
+              else add_or_replace ~gen x t
+            end
+        | c when c < 0 -> begin
+            match add_or_replace ~gen x left with
+            | Ok -> Ok
+            | Retry -> Retry
+            | Overflow -> balance t
+            | Looking_for_life -> add_or_replace ~gen x t
+          end
+        | _ -> begin
+            match add_or_replace ~gen x right with
+            | Ok -> Ok
+            | Retry -> Retry
+            | Overflow -> balance t
+            | Looking_for_life -> add_or_replace ~gen x t
+          end
+      end
+    | _ ->
+        let res = fixup t in
+        begin
+          match add_or_replace ~gen x t with
+          | Ok -> res
+          | other -> other
+        end
+
+  let rec add_or_replace_retry x t =
+    let root = Atomic.get t in
+    match add_or_replace ~gen:(t, root) x root with
+    | Ok | Overflow -> ()
+    | Retry -> add_or_replace_retry x t
+    | Looking_for_life -> assert false
+
+  let add_or_replace x t = add_or_replace_retry x t
+
   let rec remove ~gen elt t =
     let s = Atomic.get t in
     match s with
