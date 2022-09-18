@@ -129,7 +129,7 @@ module type Ordered_poly = sig
   type 'a t
   (** The type of comparable polymorphic elements. *)
 
-  val compare : 'a t -> 'a t -> int
+  val compare : 'a t -> 'b t -> int
   (** [compare a b] must return [0] if [a] equals [b], a negative number
       if [a] is stricly less than [b] and a positive number if [a] is strictly
       larger than [b]. *)
@@ -383,6 +383,79 @@ module Set (Ord : Ordered) = struct
   end
 end
 
+(******************************************************************************)
+
+module type QUERY_MAP = sig
+  type 'a key
+
+  type 'a t
+
+  (** {1 Queries} *)
+
+  val is_empty : 'a t -> bool
+  (** [is_empty t] returns [true] when the map [t] contains no bindings,
+      [false] if it has at least one. {b O(1)}  *)
+
+  val mem : 'a key -> 'a t -> bool
+  (** [mem k t] returns [true] if the key [k] is bound in the map [t],
+      [false] otherwise. {b O(logN)} *)
+
+  val min_binding : 'a t -> 'a key * 'a
+  (** [min_binding t] returns the binding with the smallest key
+      in the map [t], or raises [Not_found] if the map is empty.
+      {b O(logN)} *)
+
+  val min_binding_opt : 'a t -> ('a key * 'a) option
+  (** [min_binding t] returns the binding with the smallest key
+      in the map [t], or [None] if the map is empty. {b O(logN)} *)
+
+  val max_binding : 'a t -> 'a key * 'a
+  (** [max_binding t] returns the binding with the largest key
+      in the map [t], or raises [Not_found] if the map is empty.
+      {b O(logN)} *)
+
+  val max_binding_opt : 'a t -> ('a key * 'a) option
+  (** [max_binding_opt t] returns the binding with the largest key
+      in the map [t], or [None] if the map is empty. {b O(logN)} *)
+
+  val choose : 'a t -> 'a key * 'a
+  (** [choose t] returns an arbitrary binding of the map [t],
+      or raises [Not_found] if the map is empty. {b O(1)} *)
+
+  val choose_opt : 'a t -> ('a key * 'a) option
+  (** [choose_opt t] returns an arbitrary binding of the map [t],
+      or [None] if the map is empty. {b O(1)} *)
+
+  val find : 'a key -> 'a t -> 'a
+  (** [find k t] returns the value associated with the key [k] in the map [t],
+      or raises [Not_found] if no such binding existed. {b O(logN)} *)
+
+  val find_opt : 'a key -> 'a t -> 'a option
+  (** [find_opt k t] returns the value associated with the key [k]
+      in the map [t], or returns [None] if no such binding existed.
+      {b O(logN)} *)
+
+  val find_first : ('a key -> bool) -> 'a t -> 'a key * 'a
+  (** [find_first predicate t] returns the smallest binding of the map [t]
+      that satisfies that monotonically increasing [predicate],
+      or raises [Not_found] if no such binding exists. {b O(logN)} *)
+
+  val find_first_opt : ('a key -> bool) -> 'a t -> ('a key * 'a) option
+  (** [find_first_opt predicate t] returns the smallest binding of the map [t]
+      that satisfies that monotonically increasing [predicate],
+      or [None] if no such binding exists. {b O(logN)} *)
+
+  val find_last : ('a key -> bool) -> 'a t -> 'a key * 'a
+  (** [find_last predicate t] returns the largest binding of the map [t]
+      that satisfies that monotonically increasing [predicate],
+      or raises [Not_found] if no such binding exists. {b O(logN)} *)
+
+  val find_last_opt : ('a key -> bool) -> 'a t -> ('a key * 'a) option
+  (** [find_last_opt predicate t] returns the largest binding of the map [t]
+      that satisfies that monotonically increasing [predicate],
+      or [None] if no such binding exists. {b O(logN)} *)
+end
+
 module Map_poly (Ord : Ordered_poly) = struct
   module type S = sig
     (** Thread-safe mutable map structure given
@@ -411,14 +484,6 @@ module Map_poly (Ord : Ordered_poly) = struct
         Returns [true] if the binding was removed, or [false] if no binding
         existed for this key. {b O(logN)} *)
 
-    val find : 'a key -> 'a t -> 'a
-    (** [find k t] returns the value associated with the key [k] in the map [t],
-        or raises [Not_found] if no such binding existed. {b O(logN)} *)
-
-    val find_opt : 'a key -> 'a t -> 'a option
-    (** [find_opt k t] returns the value associated with the key [k]
-    in the map [t], or returns [None] if no such binding existed. {b O(logN)} *)
-
     val copy : 'a t -> 'a t
     (** [copy t] returns an independently mutable copy of the map [t]. Further
         modifications of the map [t] will not affect its copies
@@ -426,6 +491,8 @@ module Map_poly (Ord : Ordered_poly) = struct
 
     val cardinal : 'a t -> int
     (** [cardinal t] returns the number of bindings in the map [t]. {b O(N)} *)
+
+    include QUERY_MAP with type 'a key := 'a key and type 'a t := 'a t
   end
 end
 
