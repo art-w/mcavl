@@ -124,10 +124,30 @@ module Make (E : S.Ordered_poly) = struct
         end
       | _ -> assert false
 
+    let rec add_or_replace ~s ~get x t =
+      match get t with
+      | Leaf _ -> singleton ~s x
+      | Node (_, height, left, pivot, right) -> begin
+          match E.compare x pivot with
+          | 0 when x == pivot -> t
+          | 0 -> Atomic.make (Node (s, height, left, x, right))
+          | c when c < 0 ->
+              let left' = add_or_replace ~s ~get x left in
+              if left' == left then t else balance ~s ~get left' pivot right
+          | _ ->
+              let right' = add_or_replace ~s ~get x right in
+              if right' == right then t else balance ~s ~get left pivot right'
+        end
+      | _ -> assert false
+
     let of_list ~s lst =
-      List.fold_left (fun t x -> add ~s ~get:Atomic.get x t) (empty ~s) lst
+      List.fold_left
+        (fun t x -> add_or_replace ~s ~get:Atomic.get x t)
+        (empty ~s) lst
 
     let of_seq ~s seq =
-      Seq.fold_left (fun t x -> add ~s ~get:Atomic.get x t) (empty ~s) seq
+      Seq.fold_left
+        (fun t x -> add_or_replace ~s ~get:Atomic.get x t)
+        (empty ~s) seq
   end
 end

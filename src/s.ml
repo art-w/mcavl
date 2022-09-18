@@ -349,8 +349,6 @@ module Set (Ord : Ordered) = struct
 
   module type Sig = Set_poly(Ord_poly).S
 
-  module type View_not_poly = sig end
-
   module type S = sig
     (** Thread-safe mutable set structure given a totally ordered type. *)
 
@@ -512,6 +510,124 @@ module type ITER_MAP = sig
       of the sequence [seq]. *)
 end
 
+module View_map_poly (Ord : Ordered_poly) = struct
+  module type S = sig
+    (** A read-only, non-mutable view of a polymorphic set (with more
+        operations, similar to the purely functional {! Stdlib.Set}
+        interface) *)
+
+    type 'a key = 'a Ord.t
+    (** The type of map keys. *)
+
+    type 'a t
+    (** The type of read-only maps from ['a key] to ['a] values. *)
+
+    val empty : 'a t
+    (** The empty map. *)
+
+    val singleton : 'a key -> 'a -> 'a t
+    (** [singleton k v] returns a map containing only the binding [k] for [v].
+        {b O(1)} *)
+
+    val add : 'a key -> 'a -> 'a t -> 'a t
+    (** [add k v t] returns a map containing the binding [k] for [v] and all the
+        bindings of [t]. If [k] was already bound in the map [t], then its
+        previous value is replaced by [v]. {b O(logN)} *)
+
+    val remove : 'a key -> 'a t -> 'a t
+    (** [remove k t] returns a map containing the bindings of [t] without [k].
+        If [k] was not bound in the map [t], then the result is physically
+        equal to [t]. {b O(logN)} *)
+
+    val union : 'a t -> 'a t -> 'a t
+    (** [union t1 t2] returns a map containing all the bindings
+        of [t1] and [t2]. {b O(N)} worst-case *)
+
+    val inter : 'a t -> 'a t -> 'a t
+    (** [inter t1 t2] returns a map containing the shared bindings
+        of [t1] and [t2]. {b O(N)} worst-case *)
+
+    val diff : 'a t -> 'a t -> 'a t
+    (** [diff t1 t2] returns a map containing the bindings of [t1] whose
+        keys are not bound in the map [t2]. {b O(N)} worst-case *)
+
+    val map : ('a -> 'a) -> 'a t -> 'a t
+    (** [map f t] returns a map where each bound value in the map [t] has been
+        replaced by its mapping by [f]:
+        - The values are passed to [f] in increasing key order.
+        - The result is physically equal to [t] if [f] always returned a physically
+          equal element. {b O(NlogN)} worst-case
+    *)
+
+    val mapi : ('a key -> 'a -> 'a) -> 'a t -> 'a t
+    (** [mapi f t] returns a map where each bound value in the map [t] has been
+        replaced by its mapping by [f]:
+        - The values are passed to [f] in increasing key order.
+        - The result is physically equal to [t] if [f] always returned a physically
+          equal element. {b O(NlogN)} worst-case
+    *)
+
+    val filter : ('a key -> 'a -> bool) -> 'a t -> 'a t
+    (** [filter predicate t] returns the subset of bindings of the map [t] that
+        satistifies the [predicate] (called in increasing key order). The resulting
+        map is physical equal to [t] if no binding was rejected. {b O(N)} *)
+
+    val filter_map : ('a key -> 'a -> 'a option) -> 'a t -> 'a t
+    (** [filter_map predicate t] returns a map containing the [Some] bindings
+        of [f x0], [f x1], ..., [f xN] where [x0] ... [xN] are all the elements
+        of the map [t].
+        - The bindings are passed to [f] in increasing order.
+        - The result is physically equal to [t] if [f] always returned [Some]
+          physically equal value. {b O(NlogN)} worst-case
+    *)
+
+    val partition : ('a key -> 'a -> bool) -> 'a t -> 'a t * 'a t
+    (** [partiton predicate t] returns two maps, the first one
+        containing all the bindings of the map [t] that satisfies [predicate],
+        while the second contains all the rejected ones.
+        - The bindings are passed to [f] in increasing order.
+        - The first map is physically equal to [t] if [f] always returned
+          [true]
+        - The second map is physically equal to [t] if [f] always returned
+          [false]. {b O(N)}
+    *)
+
+    val split : 'a key -> 'a t -> 'a t * 'a option * 'a t
+    (** [split k t] returns a triple [(smaller, found, larger)] such that:
+        - [smaller] is the subset of bindings whose key is strictly smaller than [k]
+        - [larger] is the subset of bindings whose key is strictly larger than [k]
+        - [found] is [Some v] if [k] is bound to [v] in the map [t], [None] otherwise.
+        {b O(logN)}
+    *)
+
+    val pop_min : 'a t -> 'a key * 'a * 'a t
+    (** [pop_min t] returns the smallest binding and the other bindings
+        of the map [t], or raises [Not_found] if the map [t] is empty.
+        {b O(logN)} *)
+
+    val pop_min_opt : 'a t -> ('a key * 'a * 'a t) option
+    (** [pop_min_opt t] returns the smallest binding and the other bindings
+        of the map [t], or [None] if the map [t] is empty. {b O(logN)} *)
+
+    val pop_max : 'a t -> 'a key * 'a * 'a t
+    (** [pop_max t] returns the largest binding and the other bindings
+        of the map [t], or raises [Not_found] if the map [t] is empty.
+        {b O(logN)} *)
+
+    val pop_max_opt : 'a t -> ('a key * 'a * 'a t) option
+    (** [pop_max_opt t] returns the largest binding and the other bindings
+        of the map [t], or [None] if the map [t] is empty. *)
+
+    (** @inline *)
+    include QUERY_MAP with type 'a key := 'a key and type 'a t := 'a t
+
+    (** {1 Iterators} *)
+
+    (** @inline *)
+    include ITER_MAP with type 'a key := 'a key and type 'a t := 'a t
+  end
+end
+
 module Map_poly (Ord : Ordered_poly) = struct
   module type S = sig
     (** Thread-safe mutable map structure given
@@ -521,7 +637,7 @@ module Map_poly (Ord : Ordered_poly) = struct
     (** The type of the map keys. *)
 
     type 'a t
-    (** The type of maps from type ['a key] to values of type ['a]. *)
+    (** The type of maps from type ['a key] to ['a] values. *)
 
     val empty : unit -> 'a t
     (** [empty ()] returns a new empty map. {b O(1)} *)
@@ -540,14 +656,47 @@ module Map_poly (Ord : Ordered_poly) = struct
         Returns [true] if the binding was removed, or [false] if no binding
         existed for this key. {b O(logN)} *)
 
-    val copy : 'a t -> 'a t
-    (** [copy t] returns an independently mutable copy of the map [t]. Further
-        modifications of the map [t] will not affect its copies
-        (and vice-versa.) {b O(1)} *)
-
     include QUERY_MAP with type 'a key := 'a key and type 'a t := 'a t
 
-    (** {1 Iterators} *)
+    (** {1 Snapshots}
+
+        Concurrent modifications of a map are linearizable. The snapshot/copy
+        provides a coherent view of the bindings of a map along this linearized
+        timeline.
+
+        Further updates to the original map (or its copies) will trigger a minimal
+        copy-on-write of the internal substructures of the map. This doesn't impact
+        the time complexity of any operations, but induces a corresponding memory
+        complexity for copying the modified subparts once.
+    *)
+
+    val copy : 'a t -> 'a t
+    (** [copy t] returns an independently mutable copy of the map [t]. Further
+        modifications of the map [t] will not affect its copies (and vice-versa.)
+        {b O(1)} *)
+
+    module View : View_map_poly(Ord).S
+    (** A read-only, non-mutable view of a map (with more operations,
+        similar to the purely functional {! Stdlib.Map} interface) *)
+
+    val snapshot : 'a t -> 'a View.t
+    (** [snapshot t] returns a read-only view of the bindings of the map [t].
+        {b O(1)} *)
+
+    val to_view : 'a t -> 'a View.t
+    (** Same as [snapshot]. *)
+
+    val of_view : 'a View.t -> 'a t
+    (** [of_view v] returns a new mutable map containing all the bindings
+        of the view [v]. {b O(1)} *)
+
+    (** {1 Iterators}
+
+        The following functions all proceed on a coherent {! snapshot} of their
+        map [t] argument, created at the start of their execution. Concurrent
+        modifications of the original map [t] during their execution will not
+        be observed by these traversals.
+    *)
 
     (** @inline *)
     include ITER_MAP with type 'a key := 'a key and type 'a t := 'a t
@@ -572,6 +721,25 @@ module Map (Ord : Ordered) = struct
     type 'a t
     (** The type of maps from type [key] to values of type ['a]. *)
 
-    include Sig with type _ key := key and type 'a t := 'a t
+    module View : sig
+      (** A read-only, non-mutable view of a map (with more operations,
+          compatible with the purely functional {! Stdlib.Map} interface) *)
+
+      type key = Ord.t
+      (** The type of the map keys. *)
+
+      type 'a t
+      (** The type of maps from type [key] to values of type ['a]. *)
+
+      include
+        View_map_poly(Ord_poly).S with type _ key := key and type 'a t := 'a t
+    end
+
+    include
+      Sig
+        with type _ key := key
+         and type 'a t := 'a t
+         and type _ View.key := View.key
+         and module View := View
   end
 end

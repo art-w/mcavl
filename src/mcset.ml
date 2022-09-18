@@ -362,6 +362,9 @@ module Make_poly (E : S.Ordered_poly) = struct
 
     let add elt t = Pure.add ~s:Read_only ~get:ensure_read_only elt t
 
+    let add_or_replace elt t =
+      Pure.add_or_replace ~s:Read_only ~get:ensure_read_only elt t
+
     let balance left pivot right =
       Pure.balance ~s:Read_only ~get:ensure_read_only left pivot right
 
