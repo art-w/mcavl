@@ -123,6 +123,29 @@ module Make (Ord : Set.OrderedType) : sig
     (** [pop_max_opt t] returns the largest element and the other elements
         of the set [t], or [None] if the set [t] is empty. *)
 
+    val map : (elt -> elt) -> t -> t
+    (** [map f t] returns a set containing the elements [f x0], [f x1], ..., [f xN]
+        where [x0] ... [xN] are all the elements of the set [t].
+        - The elements are passed to [f] in increasing order.
+        - The result is physically equal to [t] if [f] always returned a physically
+          equal element. {O(NlogN)} worst-case
+    *)
+
+    val filter : (elt -> bool) -> t -> t
+    (** [filter predicate t] returns the subset of elements of the set [t] that
+        satistifies the [predicate] (called in increasing order). The resulting
+        set is physical equal to [t] if no element was rejected. {O(N)}
+    *)
+
+    val filter_map : (elt -> elt option) -> t -> t
+    (** [filter_map predicate t] returns a set containing the [Some] elements
+        of [f x0], [f x1], ..., [f xN] where [x0] ... [xN] are all the elements
+        of the set [t].
+        - The elements are passed to [f] in increasing order.
+        - The result is physically equal to [t] if [f] always returned [Some]
+          physically equal element. {O(NlogN)} worst-case
+    *)
+
     (** @inline *)
     include S.QUERY with type elt := elt and type t := t
 

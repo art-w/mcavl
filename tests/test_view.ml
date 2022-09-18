@@ -152,6 +152,54 @@ let test_split () =
   Alcotest.(check bool) "split: not smaller" false (S.mem 100 smaller) ;
   Alcotest.(check bool) "split: not larger" false (S.mem 100 larger)
 
+let test_map () =
+  let t = S.of_list @@ List.init 1000 (fun i -> i) in
+  let t' = S.map (fun x -> x) t in
+  Alcotest.(check bool) "map physeq" true (t == t') ;
+  let t' = S.map (fun x -> if x > 500 then -x else x) t in
+  Alcotest.(check bool)
+    "map partial physeq" true
+    (S.for_all (fun x -> S.mem (if x > 500 then -x else x) t') t) ;
+  let t' = S.map (fun x -> -x) t in
+  Alcotest.(check bool)
+    "map worst-case" true
+    (S.for_all (fun x -> S.mem (-x) t') t) ;
+  let t' = S.map (fun x -> x + 1) t in
+  Alcotest.(check bool)
+    "map in-order" true
+    (S.for_all (fun x -> S.mem (x + 1) t') t)
+
+let test_filter () =
+  let t = S.of_list @@ List.init 1000 (fun i -> i) in
+  let t' = S.filter (fun _ -> true) t in
+  Alcotest.(check bool) "filter physeq" true (t == t') ;
+  let t' = S.filter (fun _ -> false) t in
+  Alcotest.(check bool) "filter all" true (S.is_empty t') ;
+  let t' = S.filter (fun x -> x > 123) t in
+  Alcotest.(check bool)
+    "filter some half" true
+    (S.for_all (fun x -> x > 123 = S.mem x t') t) ;
+  let t' = S.filter (fun x -> x mod 2 = 0) t in
+  Alcotest.(check bool)
+    "filter some even" true
+    (S.for_all (fun x -> x mod 2 = 0 = S.mem x t') t)
+
+let test_filter_map () =
+  let t = S.of_list @@ List.init 1000 (fun i -> i) in
+  let t' = S.filter_map (fun x -> Some x) t in
+  Alcotest.(check bool) "filter_map physeq" true (t == t') ;
+  let t' = S.filter_map (fun _ -> None) t in
+  Alcotest.(check bool) "filter_map all" true (S.is_empty t') ;
+  let t' = S.filter_map (fun x -> if x > 123 then None else Some x) t in
+  Alcotest.(check bool)
+    "filter_map some half" true
+    (S.for_all (fun x -> x <= 123 = S.mem x t') t) ;
+  Printf.printf "------------------------\n%!" ;
+  let t' = S.filter_map (fun x -> if x mod 2 = 0 then Some (-x) else None) t in
+  Alcotest.(check bool)
+    "filter_map some even" true
+    (S.for_all (fun x -> x mod 2 = 0 = S.mem (-x) t') t)
+
 let test_iter () =
   let t = S.of_list @@ List.init 1000 (fun i -> i) in
   let lst = ref [] in
@@ -251,6 +299,9 @@ let tests =
   ; test_case "inter" `Quick test_inter
   ; test_case "diff" `Quick test_diff
   ; test_case "split" `Quick test_split
+  ; test_case "map" `Quick test_map
+  ; test_case "filter" `Quick test_filter
+  ; test_case "filter_map" `Quick test_filter_map
   ; test_case "iter" `Quick test_iter
   ; test_case "fold" `Quick test_fold
   ; test_case "seq" `Quick test_seq

@@ -604,6 +604,67 @@ module Make (E : Set.OrderedType) = struct
       | _ -> assert false
 
     let to_rev_seq t = to_rev_seq t (fun () -> Seq.Nil)
+
+    let fast_union left pivot right =
+      match max_elt_opt left, min_elt_opt right with
+      | None, None -> singleton pivot
+      | Some max, None when E.compare max pivot < 0 -> add_max pivot left
+      | None, Some min when E.compare pivot min < 0 -> add_min pivot right
+      | Some max, Some min
+        when E.compare max pivot < 0 && E.compare pivot min < 0 ->
+          join left pivot right
+      | _ -> union left (add pivot right)
+
+    let fast_append left right =
+      match max_elt_opt left, min_elt_opt right with
+      | None, None -> empty
+      | Some _, None -> left
+      | None, Some _ -> right
+      | Some max, Some min when E.compare max min < 0 -> append left right
+      | _ -> union left right
+
+    let rec map f t =
+      match ensure_read_only t with
+      | Leaf Read_only -> t
+      | Node (Read_only, _, left, pivot, right) ->
+          let left' = map f left in
+          let pivot' = f pivot in
+          let right' = map f right in
+          if left == left' && pivot == pivot' && right == right'
+          then t
+          else fast_union left' pivot' right'
+      | _ -> assert false
+
+    let rec filter f t =
+      match ensure_read_only t with
+      | Leaf Read_only -> t
+      | Node (Read_only, _, left, pivot, right) ->
+          let left' = filter f left in
+          let keep = f pivot in
+          let right' = filter f right in
+          if left == left' && keep && right == right'
+          then t
+          else if keep
+          then join left' pivot right'
+          else append left' right'
+      | _ -> assert false
+
+    let rec filter_map f t =
+      match ensure_read_only t with
+      | Leaf Read_only -> t
+      | Node (Read_only, _, left, pivot, right) ->
+          let left' = filter_map f left in
+          let keep = f pivot in
+          let right' = filter_map f right in
+          begin
+            match keep with
+            | None -> fast_append left' right'
+            | Some pivot' ->
+                if left == left' && pivot == pivot' && right == right'
+                then t
+                else fast_union left' pivot' right'
+          end
+      | _ -> assert false
   end
 
   let cardinal t = View.cardinal (snapshot t)
