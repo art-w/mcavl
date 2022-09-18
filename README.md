@@ -1,6 +1,6 @@
-A lock-free Set for OCaml multicore: [**online documentation**](https://art-w.github.io/mcavl/mcavl/Mcavl)
+Lock-free Sets and Maps for OCaml multicore: [**online documentation**](https://art-w.github.io/mcavl/mcavl/Mcavl)
 
-- The queries and updates are linearizable, such that you can pretend that they happened in a specific order when debugging your algorithms (even though their execution was interleaved.) The `copy` operation provides an `O(1)` snapshot of the set to observe a coherent copy-on-write view of the elements in the linearized timeline:
+- The queries and updates are linearizable, such that you can pretend that they happened in a specific order when debugging your algorithms (even though their execution was interleaved.) The `copy` operation provides an `O(1)` snapshot of the collection to observe a coherent copy-on-write view of the elements in the linearized timeline:
 
   ![Linearized timeline](https://art-w.github.io/mcavl/linearized.png)
 
@@ -22,4 +22,4 @@ A lock-free Set for OCaml multicore: [**online documentation**](https://art-w.gi
 
 - Given enough cores, performances are reasonable! In presence of contention, a concurrent operation will help other threads finish their work in order to avoid having to wait for them. There should be little busy looping to make progress: The worst case is a concurrent `copy` that requires the operation to restart from scratch on the new copy-on-write root. The expected cases are contention by inserting new elements at the exact same leaf (which only requires a local retry at that spot), or when encountering "dead" nodes (where it doesn't take long to walk back up the tree to discover the freshly rebalanced path.)
 
-  ![Add 1m elements](https://art-w.github.io/mcavl/test_add.png) ![Remove 1m elements](https://art-w.github.io/mcavl/test_remove.png)
+![Add 1m elements](https://art-w.github.io/mcavl/test_add.png) ![Remove 1m elements](https://art-w.github.io/mcavl/test_remove.png)
