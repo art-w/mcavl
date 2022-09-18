@@ -1,4 +1,6 @@
-module Make (E : Set.OrderedType) = struct
+module type Ordered = S.Ordered
+
+module Make (E : Ordered) = struct
   include Core.Make (E)
 
   let rec add ~gen x t =
