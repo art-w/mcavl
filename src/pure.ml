@@ -1,23 +1,26 @@
-module Make (E : Set.OrderedType) = struct
-  type elt = E.t
+module Make (E : S.Ordered_poly) = struct
+  type 'a elt = 'a E.t
 
-  type t = r Atomic.t
+  type 'a t = 'a r Atomic.t
 
-  and r = s Atomic.t
+  and 'a r = 'a s Atomic.t
 
-  and s = Leaf of state | Node of state * int * r * elt * r | Copy of r
+  and 'a s =
+    | Leaf of 'a state
+    | Node of 'a state * int * 'a r * 'a elt * 'a r
+    | Copy of 'a r
 
-  and state =
+  and 'a state =
     | Alive
     | Dead
     | Removing
     | Read_only
-    | Balancing_left of s * s
-    | Balancing_left_center of s * s * s * s
-    | Balancing_right of s * s
-    | Balancing_right_center of s * s * s * s
-    | Attempt_add of attempt * t * r
-    | Attempt_remove of attempt * t * r
+    | Balancing_left of 'a s * 'a s
+    | Balancing_left_center of 'a s * 'a s * 'a s * 'a s
+    | Balancing_right of 'a s * 'a s
+    | Balancing_right_center of 'a s * 'a s * 'a s * 'a s
+    | Attempt_add of attempt * 'a t * 'a r
+    | Attempt_remove of attempt * 'a t * 'a r
 
   and attempt = attempt_state Atomic.t
 

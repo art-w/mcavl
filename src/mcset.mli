@@ -11,8 +11,14 @@
     observe its collection of elements at a given point in time.
 *)
 
-module type Ordered = S.Ordered
-(** @inline *)
+(** {1 Sets} *)
 
-(** @inline *)
-module Make (Ord : Ordered) : S.Make(Ord).S
+module type Ordered = S.Ordered
+
+module Make (Ord : Ordered) : S.Set(Ord).S
+
+(** {1 Polymorphic sets} *)
+
+module type Ordered_poly = S.Ordered_poly
+
+module Make_poly (Ord : Ordered_poly) : S.Set_poly(Ord).S

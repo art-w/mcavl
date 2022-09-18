@@ -1,4 +1,4 @@
-module Make (E : Set.OrderedType) = struct
+module Make (E : S.Ordered_poly) = struct
   include Pure.Make (E)
 
   type result = Ok | Overflow | Looking_for_life | Retry

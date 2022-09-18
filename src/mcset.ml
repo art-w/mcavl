@@ -1,6 +1,6 @@
-module type Ordered = S.Ordered
+module type Ordered_poly = S.Ordered_poly
 
-module Make (E : Ordered) = struct
+module Make_poly (E : Ordered_poly) = struct
   include Core.Make (E)
 
   let rec add ~gen x t =
@@ -272,11 +272,13 @@ module Make (E : Ordered) = struct
   let copy t = of_view (to_view t)
 
   module View = struct
-    type elt = E.t
+    type 'a elt = 'a E.t
 
-    type t = r
+    type 'a t = 'a r
 
-    let empty = Pure.empty ~s:Read_only
+    let empty_fresh () = Pure.empty ~s:Read_only
+
+    let empty = Obj.magic (empty_fresh ()) (* weak! *)
 
     let singleton elt = Pure.singleton ~s:Read_only elt
 
@@ -368,7 +370,7 @@ module Make (E : Ordered) = struct
 
     let rec split elt t =
       match ensure_read_only t with
-      | Leaf Read_only -> empty, false, empty
+      | Leaf Read_only -> t, false, t
       | Node (Read_only, _, left, pivot, right) -> begin
           match E.compare elt pivot with
           | 0 -> left, true, right
@@ -396,7 +398,8 @@ module Make (E : Ordered) = struct
 
     let rec inter t1 t2 =
       match ensure_read_only t1, ensure_read_only t2 with
-      | Leaf Read_only, _ | _, Leaf Read_only -> empty
+      | Leaf Read_only, _ -> t1
+      | _, Leaf Read_only -> t2
       | Node (Read_only, h1, l1, p1, r1), Node (Read_only, h2, _, _, _)
         when h1 >= h2 ->
           let l2, found, r2 = split p1 t2 in
@@ -410,8 +413,7 @@ module Make (E : Ordered) = struct
 
     let rec diff t1 t2 =
       match ensure_read_only t1, ensure_read_only t2 with
-      | Leaf Read_only, _ -> empty
-      | _, Leaf Read_only -> t1
+      | Leaf Read_only, _ | _, Leaf Read_only -> t1
       | Node (Read_only, _, l1, p1, r1), _ ->
           let l2, found, r2 = split p1 t2 in
           let l12, r12 = diff l1 l2, diff r1 r2 in
@@ -619,9 +621,8 @@ module Make (E : Ordered) = struct
 
     let fast_append left right =
       match max_elt_opt left, min_elt_opt right with
-      | None, None -> empty
-      | Some _, None -> left
-      | None, Some _ -> right
+      | _, None -> left
+      | None, _ -> right
       | Some max, Some min when E.compare max min < 0 -> append left right
       | _ -> union left right
 
@@ -676,9 +677,9 @@ module Make (E : Ordered) = struct
           let keep = f pivot in
           let right', not_right' = partition f right in
           if left == left' && keep && right == right'
-          then t, empty
+          then t, empty_fresh ()
           else if left == not_left' && (not keep) && right == not_right'
-          then empty, t
+          then empty_fresh (), t
           else if keep
           then join left' pivot right', append not_left' not_right'
           else append left' right', join not_left' pivot not_right'
@@ -725,4 +726,40 @@ module Make (E : Ordered) = struct
   let to_rev_seq t = View.to_rev_seq (snapshot t)
 
   let to_seq_from elt t = View.to_seq_from elt (snapshot t)
+end
+
+module type Ordered = S.Ordered
+
+module Make (Ord : Ordered) = struct
+  module Ord_poly = struct
+    type _ t = Ord.t
+
+    let compare = Ord.compare
+  end
+
+  module I = Make_poly (Ord_poly)
+
+  type void = |
+
+  type elt = Ord.t
+
+  type t = void I.t
+
+  module View = struct
+    type elt = Ord.t
+
+    type t = void I.View.t
+
+    include (
+      I.View : S.View_poly(Ord_poly).S with type _ elt := elt and type _ t := t )
+  end
+
+  include (
+    I :
+      S.Set_poly(Ord_poly).S
+        with type _ elt := elt
+         and type _ t := t
+         and type _ View.elt := View.elt
+         and type _ View.t := View.t
+         and module View := View )
 end
