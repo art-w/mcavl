@@ -146,6 +146,17 @@ module Make (Ord : Set.OrderedType) : sig
           physically equal element. {O(NlogN)} worst-case
     *)
 
+    val partition : (elt -> bool) -> t -> t * t
+    (** [partiton predicate t] returns two sets, the first one
+        containing all the elements of the set [t] that satisfies [predicate],
+        while the second contains all the rejected ones.
+        - The elements are passed to [f] in increasing order.
+        - The first set is physically equal to [t] if [f] always returned
+          [true]
+        - The second set is physically equal to [t] if [f] always returned
+          [false]. {O(N)}
+    *)
+
     (** @inline *)
     include S.QUERY with type elt := elt and type t := t
 

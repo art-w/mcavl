@@ -665,6 +665,22 @@ module Make (E : Set.OrderedType) = struct
                 else fast_union left' pivot' right'
           end
       | _ -> assert false
+
+    let rec partition f t =
+      match ensure_read_only t with
+      | Leaf Read_only -> t, t
+      | Node (Read_only, _, left, pivot, right) ->
+          let left', not_left' = partition f left in
+          let keep = f pivot in
+          let right', not_right' = partition f right in
+          if left == left' && keep && right == right'
+          then t, empty
+          else if left == not_left' && (not keep) && right == not_right'
+          then empty, t
+          else if keep
+          then join left' pivot right', append not_left' not_right'
+          else append left' right', join not_left' pivot not_right'
+      | _ -> assert false
   end
 
   let cardinal t = View.cardinal (snapshot t)

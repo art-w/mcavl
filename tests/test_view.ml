@@ -184,6 +184,25 @@ let test_filter () =
     "filter some even" true
     (S.for_all (fun x -> x mod 2 = 0 = S.mem x t') t)
 
+let test_partition () =
+  let t = S.of_list @@ List.init 1000 (fun i -> i) in
+  let t', tn = S.partition (fun _ -> true) t in
+  Alcotest.(check bool) "partition physeq" true (t == t') ;
+  Alcotest.(check bool) "partition is_empty" true (S.is_empty tn) ;
+  let t', tn = S.partition (fun _ -> false) t in
+  Alcotest.(check bool) "partition all is_empty" true (S.is_empty t') ;
+  Alcotest.(check bool) "partition all physeq" true (t == tn) ;
+  let t', tn = S.partition (fun x -> x > 123) t in
+  Alcotest.(check bool)
+    "partition some half" true
+    (S.for_all (fun x -> x > 123 = S.mem x t' && x <= 123 = S.mem x tn) t) ;
+  let t', tn = S.partition (fun x -> x mod 2 = 0) t in
+  Alcotest.(check bool)
+    "partition some even" true
+    (S.for_all
+       (fun x -> x mod 2 = 0 = S.mem x t' && x mod 2 <> 0 = S.mem x tn)
+       t )
+
 let test_filter_map () =
   let t = S.of_list @@ List.init 1000 (fun i -> i) in
   let t' = S.filter_map (fun x -> Some x) t in
@@ -301,6 +320,7 @@ let tests =
   ; test_case "split" `Quick test_split
   ; test_case "map" `Quick test_map
   ; test_case "filter" `Quick test_filter
+  ; test_case "partition" `Quick test_partition
   ; test_case "filter_map" `Quick test_filter_map
   ; test_case "iter" `Quick test_iter
   ; test_case "fold" `Quick test_fold
