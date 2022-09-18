@@ -203,6 +203,23 @@ let test_partition () =
        (fun x -> x mod 2 = 0 = S.mem x t' && x mod 2 <> 0 = S.mem x tn)
        t )
 
+let test_comparisons () =
+  let t1 = S.of_list @@ List.init 1000 (fun i -> 3 * i) in
+  let t2 = S.of_list @@ List.init 1000 (fun i -> (3 * i) + 1) in
+  Alcotest.(check bool) "not equal" false (S.equal t1 t2) ;
+  Alcotest.(check bool) "smaller" true (S.compare t1 t2 < 0) ;
+  Alcotest.(check bool) "larger" true (S.compare t2 t1 > 0) ;
+  Alcotest.(check bool) "disjoint" true (S.disjoint t1 t2) ;
+  let t3 = S.of_list @@ List.init 1000 (fun i -> i) in
+  Alcotest.(check bool) "not equal" false (S.equal t1 t3) ;
+  Alcotest.(check bool) "larger" true (S.compare t1 t3 > 0) ;
+  Alcotest.(check bool) "smaller" true (S.compare t3 t1 < 0) ;
+  Alcotest.(check bool) "not disjoint" false (S.disjoint t1 t3) ;
+  let t4 = S.diff (S.union t1 t2) t2 in
+  Alcotest.(check bool) "different structure" true (t1 <> t4) ;
+  Alcotest.(check bool) "equal" true (S.equal t1 t4) ;
+  Alcotest.(check bool) "not disjoint" false (S.disjoint t1 t4)
+
 let test_filter_map () =
   let t = S.of_list @@ List.init 1000 (fun i -> i) in
   let t' = S.filter_map (fun x -> Some x) t in
@@ -213,7 +230,6 @@ let test_filter_map () =
   Alcotest.(check bool)
     "filter_map some half" true
     (S.for_all (fun x -> x <= 123 = S.mem x t') t) ;
-  Printf.printf "------------------------\n%!" ;
   let t' = S.filter_map (fun x -> if x mod 2 = 0 then Some (-x) else None) t in
   Alcotest.(check bool)
     "filter_map some even" true
@@ -322,6 +338,7 @@ let tests =
   ; test_case "filter" `Quick test_filter
   ; test_case "partition" `Quick test_partition
   ; test_case "filter_map" `Quick test_filter_map
+  ; test_case "comparisons" `Quick test_comparisons
   ; test_case "iter" `Quick test_iter
   ; test_case "fold" `Quick test_fold
   ; test_case "seq" `Quick test_seq

@@ -97,6 +97,40 @@ module Make (Ord : Set.OrderedType) : sig
     (** [diff t1 t2] returns a set containing the elements of [t1] that are
         not members of the set [t2]. {b O(N)} worst-case *)
 
+    val map : (elt -> elt) -> t -> t
+    (** [map f t] returns a set containing the elements [f x0], [f x1], ..., [f xN]
+        where [x0] ... [xN] are all the elements of the set [t].
+        - The elements are passed to [f] in increasing order.
+        - The result is physically equal to [t] if [f] always returned a physically
+          equal element. {b O(NlogN)} worst-case
+    *)
+
+    val filter : (elt -> bool) -> t -> t
+    (** [filter predicate t] returns the subset of elements of the set [t] that
+        satistifies the [predicate] (called in increasing order). The resulting
+        set is physical equal to [t] if no element was rejected. {b O(N)}
+    *)
+
+    val filter_map : (elt -> elt option) -> t -> t
+    (** [filter_map predicate t] returns a set containing the [Some] elements
+        of [f x0], [f x1], ..., [f xN] where [x0] ... [xN] are all the elements
+        of the set [t].
+        - The elements are passed to [f] in increasing order.
+        - The result is physically equal to [t] if [f] always returned [Some]
+          physically equal element. {b O(NlogN)} worst-case
+    *)
+
+    val partition : (elt -> bool) -> t -> t * t
+    (** [partiton predicate t] returns two sets, the first one
+        containing all the elements of the set [t] that satisfies [predicate],
+        while the second contains all the rejected ones.
+        - The elements are passed to [f] in increasing order.
+        - The first set is physically equal to [t] if [f] always returned
+          [true]
+        - The second set is physically equal to [t] if [f] always returned
+          [false]. {b O(N)}
+    *)
+
     val split : elt -> t -> t * bool * t
     (** [split x t] returns a triple [(smaller, found, larger)] such that:
         - [smaller] is the subset of elements strictly smaller than [x]
@@ -123,39 +157,18 @@ module Make (Ord : Set.OrderedType) : sig
     (** [pop_max_opt t] returns the largest element and the other elements
         of the set [t], or [None] if the set [t] is empty. *)
 
-    val map : (elt -> elt) -> t -> t
-    (** [map f t] returns a set containing the elements [f x0], [f x1], ..., [f xN]
-        where [x0] ... [xN] are all the elements of the set [t].
-        - The elements are passed to [f] in increasing order.
-        - The result is physically equal to [t] if [f] always returned a physically
-          equal element. {O(NlogN)} worst-case
-    *)
+    (** {2 Comparisons} *)
 
-    val filter : (elt -> bool) -> t -> t
-    (** [filter predicate t] returns the subset of elements of the set [t] that
-        satistifies the [predicate] (called in increasing order). The resulting
-        set is physical equal to [t] if no element was rejected. {O(N)}
-    *)
+    val equal : t -> t -> bool
+    (** [equal t1 t2] returns [true] if the sets [t1] and [t2] contain the same
+        elements. *)
 
-    val filter_map : (elt -> elt option) -> t -> t
-    (** [filter_map predicate t] returns a set containing the [Some] elements
-        of [f x0], [f x1], ..., [f xN] where [x0] ... [xN] are all the elements
-        of the set [t].
-        - The elements are passed to [f] in increasing order.
-        - The result is physically equal to [t] if [f] always returned [Some]
-          physically equal element. {O(NlogN)} worst-case
-    *)
+    val disjoint : t -> t -> bool
+    (** [disjoint t1 t2] returns [true] if the sets [t1] and [t2] have
+        no elements in common. *)
 
-    val partition : (elt -> bool) -> t -> t * t
-    (** [partiton predicate t] returns two sets, the first one
-        containing all the elements of the set [t] that satisfies [predicate],
-        while the second contains all the rejected ones.
-        - The elements are passed to [f] in increasing order.
-        - The first set is physically equal to [t] if [f] always returned
-          [true]
-        - The second set is physically equal to [t] if [f] always returned
-          [false]. {O(N)}
-    *)
+    val compare : t -> t -> int
+    (** [compare t1 t2] is a total order, suitable for building sets of sets. *)
 
     (** @inline *)
     include S.QUERY with type elt := elt and type t := t

@@ -681,6 +681,23 @@ module Make (E : Set.OrderedType) = struct
           then join left' pivot right', append not_left' not_right'
           else append left' right', join not_left' pivot not_right'
       | _ -> assert false
+
+    let compare t1 t2 = Seq.compare E.compare (to_seq t1) (to_seq t2)
+
+    let equal t1 t2 = compare t1 t2 = 0
+
+    let rec disjoint t1 t2 =
+      match ensure_read_only t1, ensure_read_only t2 with
+      | Leaf Read_only, _ | _, Leaf Read_only -> true
+      | Node (Read_only, h1, l1, p1, r1), Node (Read_only, h2, l2, p2, r2) ->
+          if h1 > h2
+          then
+            let l2, found, r2 = split p1 t2 in
+            (not found) && disjoint l1 l2 && disjoint r1 r2
+          else
+            let l1, found, r1 = split p2 t1 in
+            (not found) && disjoint l1 l2 && disjoint r1 r2
+      | _ -> assert false
   end
 
   let cardinal t = View.cardinal (snapshot t)
