@@ -1,6 +1,4 @@
-module type Ordered_poly = S.Ordered_poly
-
-module Make_poly (E : Ordered_poly) = struct
+module Make_poly (E : S.Ordered_poly) = struct
   include Core.Make (E)
 
   let rec add ~gen x t =
@@ -728,9 +726,7 @@ module Make_poly (E : Ordered_poly) = struct
   let to_seq_from elt t = View.to_seq_from elt (snapshot t)
 end
 
-module type Ordered = S.Ordered
-
-module Make (Ord : Ordered) = struct
+module Make (Ord : S.Ordered) = struct
   module Ord_poly = struct
     type _ t = Ord.t
 

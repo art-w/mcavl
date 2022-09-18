@@ -15,10 +15,10 @@
 
 module type Ordered = S.Ordered
 
-module Make (Ord : Ordered) : S.Set(Ord).S
+module Set (Ord : Ordered) : S.Set(Ord).S
 
 (** {1 Polymorphic sets} *)
 
 module type Ordered_poly = S.Ordered_poly
 
-module Make_poly (Ord : Ordered_poly) : S.Set_poly(Ord).S
+module Set_poly (Ord : Ordered_poly) : S.Set_poly(Ord).S

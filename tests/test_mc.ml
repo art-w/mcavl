@@ -1,4 +1,4 @@
-module S = Mcavl.Make (Int)
+module S = Mcavl.Set (Int)
 
 let test_all () =
   let t = S.empty () in

@@ -1,4 +1,4 @@
-module S = Mcavl.Make (Int)
+module S = Mcavl.Set (Int)
 
 let shuffle a =
   let n = Array.length a in

@@ -1,4 +1,4 @@
-module MS = Mcavl.Make (Int)
+module MS = Mcavl.Set (Int)
 module S = MS.View
 
 let shuffle a =
