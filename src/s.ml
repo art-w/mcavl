@@ -456,6 +456,62 @@ module type QUERY_MAP = sig
       or [None] if no such binding exists. {b O(logN)} *)
 end
 
+module type ITER_MAP = sig
+  type 'a key
+
+  type 'a t
+
+  val cardinal : 'a t -> int
+  (** [cardinal t] returns the number of bindings in the map [t].  {b O(N)} *)
+
+  val fold : ('a key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+  (** [fold f t init] computes [f k0 v0 init |> f k1 v1 |> ... |> f kN vN],
+      where [k0,v0] ... [kN,vN] are the bindings of the map [t] in increasing order.
+      Returns [init] if the map [t] was empty. *)
+
+  val iter : ('a key -> 'a -> unit) -> 'a t -> unit
+  (** [iter f t] calls [f] on all the bindings of the set [t] in increasing
+      order. *)
+
+  val for_all : ('a key -> 'a -> bool) -> 'a t -> bool
+  (** [for_all predicate t] returns [true] when all the bindings of the map [t]
+      satisfies the [predicate]. No ordering is guaranteed and the function
+      will exit early if it finds an invalid binding. *)
+
+  val exists : ('a key -> 'a -> bool) -> 'a t -> bool
+  (** [exists predicate t] returns [true] when at least one binding of the map
+      [t] satisfies the [predicate]. No ordering is guaranteed and the function
+      will exit early if it finds a valid binding. *)
+
+  val bindings : 'a t -> ('a key * 'a) list
+  (** [bindings t] is the list of all the bindings of [t] in increasing
+      order. *)
+
+  val to_list : 'a t -> ('a key * 'a) list
+  (** Same as [bindings]. *)
+
+  val of_list : ('a key * 'a) list -> 'a t
+  (** [of_list lst] is the map containing all the bindings of the list [lst]. *)
+
+  val to_seq : 'a t -> ('a key * 'a) Seq.t
+  (** [to_seq t] is the sequence containing all the bindings of the map [t] in
+      increasing order. {b O(1)} creation then {b O(1)} amortized for each
+      consumed binding of the sequence (with {b O(logN) worst-case}) *)
+
+  val to_rev_seq : 'a t -> ('a key * 'a) Seq.t
+  (** [to_rev_seq t] is the sequence containing all the bindings of the map [t]
+      in decreasing order. *)
+
+  val to_seq_from : 'a key -> 'a t -> ('a key * 'a) Seq.t
+  (** [to_seq_from k t] is the sequence containing all the bindings
+      of the set [t] whose key is larger than or equal to [k],
+      in increasing order. *)
+
+  val of_seq : ('a key * 'a) Seq.t -> 'a t
+  (** [of_set seq] is the map containing all the bindings
+      of the sequence [seq]. *)
+end
+
 module Map_poly (Ord : Ordered_poly) = struct
   module type S = sig
     (** Thread-safe mutable map structure given
@@ -489,10 +545,12 @@ module Map_poly (Ord : Ordered_poly) = struct
         modifications of the map [t] will not affect its copies
         (and vice-versa.) {b O(1)} *)
 
-    val cardinal : 'a t -> int
-    (** [cardinal t] returns the number of bindings in the map [t]. {b O(N)} *)
-
     include QUERY_MAP with type 'a key := 'a key and type 'a t := 'a t
+
+    (** {1 Iterators} *)
+
+    (** @inline *)
+    include ITER_MAP with type 'a key := 'a key and type 'a t := 'a t
   end
 end
 

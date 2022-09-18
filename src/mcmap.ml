@@ -6,6 +6,8 @@ module Make_poly (Ord : S.Ordered_poly) = struct
   module Kv = struct
     type 'a t = 'a kv
 
+    let make (k, v) = Kv (k, v)
+
     let key = function
       | K k -> k
       | Kv (k, _) -> k
@@ -27,6 +29,10 @@ module Make_poly (Ord : S.Ordered_poly) = struct
       | Some (Kv (k, v)) -> Some (k, v)
       | None -> None
       | Some (K _) -> invalid_arg "Kv.value_opt missing"
+
+    let apply f kv =
+      let k, v = binding kv in
+      f k v
 
     let compare a b = Ord.compare (key a) (key b)
   end
@@ -76,6 +82,28 @@ module Make_poly (Ord : S.Ordered_poly) = struct
   let choose t = Kv.binding (S.choose t)
 
   let choose_opt t = Kv.binding_opt (S.choose_opt t)
+
+  let fold f t init = S.fold (fun kv acc -> Kv.apply f kv acc) t init
+
+  let iter f t = S.iter (fun kv -> Kv.apply f kv) t
+
+  let for_all f t = S.for_all (fun kv -> Kv.apply f kv) t
+
+  let exists f t = S.exists (fun kv -> Kv.apply f kv) t
+
+  let bindings t = List.map Kv.binding (S.elements t)
+
+  let to_list t = List.map Kv.binding (S.to_list t)
+
+  let of_list lst = S.of_list (List.map Kv.make lst)
+
+  let to_seq t = Seq.map Kv.binding (S.to_seq t)
+
+  let of_seq seq = S.of_seq (Seq.map Kv.make seq)
+
+  let to_rev_seq t = Seq.map Kv.binding (S.to_rev_seq t)
+
+  let to_seq_from k t = Seq.map Kv.binding (S.to_seq_from (K k) t)
 end
 
 module Make (Ord : S.Ordered) = struct
