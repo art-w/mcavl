@@ -11,19 +11,20 @@
 (executable
  (name qc_set)
  (modules qc_set)
- (libraries
-  mcavl
-  qcheck
-  qcheck-stm)
+ (libraries mcavl qcheck qcheck-stm)
+ (preprocess
+  (pps ppx_deriving.show)))
+
+(executable
+ (name qclin_set)
+ (modules qclin_set)
+ (libraries mcavl qcheck lin)
  (preprocess
   (pps ppx_deriving.show)))
 
 (executable
  (name qc_map)
  (modules qc_map)
- (libraries
-  mcavl
-  qcheck
-  qcheck-stm)
+ (libraries mcavl qcheck qcheck-stm)
  (preprocess
   (pps ppx_deriving.show)))

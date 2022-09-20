@@ -22,6 +22,7 @@
    dune
    (alcotest :with-test)
    (domainslib :with-test)
+   (lin :with-test)
    (qcheck-stm :with-test)
    (multicoretests-util :with-test)
   ))

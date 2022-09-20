@@ -1,4 +1,5 @@
 pin-depends: [
+  [ "lin.dev" "git+https://github.com/jmid/multicoretests.git#opam-pkg-rename" ]
   [ "qcheck-stm.dev" "git+https://github.com/jmid/multicoretests.git#opam-pkg-rename" ]
   [ "multicoretests-util.dev" "git+https://github.com/jmid/multicoretests.git#opam-pkg-rename" ]
 ]
