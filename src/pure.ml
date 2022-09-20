@@ -13,8 +13,8 @@ module Make (E : S.Ordered_poly) = struct
   and 'a state =
     | Alive
     | Dead
-    | Removing
     | Read_only
+    | Removing
     | Balancing_left of 'a s * 'a s
     | Balancing_left_center of 'a s * 'a s * 'a s * 'a s
     | Balancing_right of 'a s * 'a s

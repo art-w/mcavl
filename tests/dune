@@ -14,10 +14,7 @@
  (libraries
   mcavl
   qcheck
-  qcheck-ounit
-  qcheck-core
-  qcheck-core.runner
-  multicorecheck.stm)
+  qcheck-stm)
  (preprocess
   (pps ppx_deriving.show)))
 
@@ -27,9 +24,6 @@
  (libraries
   mcavl
   qcheck
-  qcheck-ounit
-  qcheck-core
-  qcheck-core.runner
-  multicorecheck.stm)
+  qcheck-stm)
  (preprocess
   (pps ppx_deriving.show)))

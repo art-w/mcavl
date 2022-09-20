@@ -16,12 +16,12 @@
 
 (package
  (name mcavl)
- (synopsis "Lock-free Sets for OCaml multicore")
+ (synopsis "Lock-free Sets and Maps for OCaml multicore")
  (depends
    (ocaml (>= 5.0.0))
    dune
    (alcotest :with-test)
    (domainslib :with-test)
-   (multicoretests :with-test)
-   (multicorecheck :with-test)
-   ))
+   (qcheck-stm :with-test)
+   (multicoretests-util :with-test)
+  ))

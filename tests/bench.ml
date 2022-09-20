@@ -113,7 +113,7 @@ end
 
 let run domains (module Impl : SET) =
   let module Config = struct
-    let pool = T.setup_pool ~num_domains:domains ()
+    let pool = T.setup_pool ~num_additional_domains:domains ()
 
     let nb_threads = domains + 1
 
